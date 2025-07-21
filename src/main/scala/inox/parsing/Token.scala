@@ -1,4 +1,4 @@
-package inox
+package inox.parsing
 
 /** A lexical token. */
 enum Token {
@@ -22,11 +22,13 @@ enum Token {
   case TrueLit
 
   // Operators:
+  case AmpersandX2
   case Bang
   case BangEqual
-  case EqualEqual
+  case EqualX2
   case LAngleEqual
   case Minus
+  case PipeX2
   case Plus
   case RAngleEqual
   case Slash
@@ -37,7 +39,7 @@ enum Token {
   case Arrow
   case Comma
   case Colon
-  case ColonColon
+  case ColonX2
   case Equal
   case LAngle
   case LBrace
@@ -68,11 +70,13 @@ enum Token {
       case Name        => "a name"
       case Origin      => "an origin"
       case TrueLit     => "the 'true' literal"
+      case AmpersandX2 => "the '&&' operator"
       case Bang        => "the '!' operator"
       case BangEqual   => "the '!=' operator"
-      case EqualEqual  => "the '==' operator"
+      case EqualX2     => "the '==' operator"
       case LAngleEqual => "the '<=' operator"
       case Minus       => "the '-' operator"
+      case PipeX2      => "the '||' operator"
       case Plus        => "the '+' operator"
       case RAngleEqual => "the '>=' operator"
       case Slash       => "the '/' operator"
@@ -81,7 +85,7 @@ enum Token {
       case Arrow       => "a '->'"
       case Comma       => "a ','"
       case Colon       => "a ':'"
-      case ColonColon  => "a '::'"
+      case ColonX2     => "a '::'"
       case Equal       => "a '='"
       case LAngle      => "a '<'"
       case LBrace      => "a '{'"

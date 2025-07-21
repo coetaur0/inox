@@ -1,4 +1,6 @@
-package inox
+package inox.parsing
+
+import inox.{Location, Span, Spanned}
 
 /** A lexical analyser for Inox. */
 class Lexer(source: String) {
@@ -59,11 +61,13 @@ class Lexer(source: String) {
   /** Tokenises an operator or punctuation symbol. */
   private def symbol(): Spanned[Token] = {
     val (kind, length) = (peek(0), peek(1)) match {
+      case (Some('&'), Some('&')) => (Token.AmpersandX2, 2)
       case (Some('-'), Some('>')) => (Token.Arrow, 2)
       case (Some('!'), Some('=')) => (Token.BangEqual, 2)
-      case (Some(':'), Some(':')) => (Token.ColonColon, 2)
-      case (Some('='), Some('=')) => (Token.EqualEqual, 2)
+      case (Some(':'), Some(':')) => (Token.ColonX2, 2)
+      case (Some('='), Some('=')) => (Token.EqualX2, 2)
       case (Some('<'), Some('=')) => (Token.LAngleEqual, 2)
+      case (Some('|'), Some('|')) => (Token.PipeX2, 2)
       case (Some('>'), Some('=')) => (Token.RAngleEqual, 2)
       case (Some('&'), _)         => (Token.Ampersand, 1)
       case (Some('!'), _)         => (Token.Bang, 1)

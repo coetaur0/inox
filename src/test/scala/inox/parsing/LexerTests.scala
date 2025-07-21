@@ -1,4 +1,4 @@
-package inox
+package inox.parsing
 
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -67,13 +67,15 @@ class LexerTests extends AnyFunSuite {
 
   test("Operators should be lexed properly") {
     check(
-      "! != == <= - + >= / *",
+      "&& ! != == <= - || + >= / *",
       List(
+        (Token.AmpersandX2, "&&"),
         (Token.Bang, "!"),
         (Token.BangEqual, "!="),
-        (Token.EqualEqual, "=="),
+        (Token.EqualX2, "=="),
         (Token.LAngleEqual, "<="),
         (Token.Minus, "-"),
+        (Token.PipeX2, "||"),
         (Token.Plus, "+"),
         (Token.RAngleEqual, ">="),
         (Token.Slash, "/"),
@@ -91,7 +93,7 @@ class LexerTests extends AnyFunSuite {
         (Token.Arrow, "->"),
         (Token.Comma, ","),
         (Token.Colon, ":"),
-        (Token.ColonColon, "::"),
+        (Token.ColonX2, "::"),
         (Token.Equal, "="),
         (Token.LAngle, "<"),
         (Token.LBrace, "{"),
