@@ -4,6 +4,33 @@ import org.scalatest.funsuite.AnyFunSuite
 import inox.{Location, Result, Span, Spanned}
 
 class ParserTests extends AnyFunSuite {
+  test("Function declarations should be properly parsed") {
+    checkOk(
+      "fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }",
+      Parser.parse
+    )
+
+    checkError(
+      "fn f() {} fn f() {}",
+      Parser.parse,
+      IndexedSeq(
+        ParseError.DuplicateFunction(
+          Spanned("f", Span(Location(1, 14, 13), Location(1, 15, 14)))
+        )
+      )
+    )
+    checkError(
+      "fn f() -> {}",
+      Parser.parse,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "a type expression",
+          Spanned("{", Span(Location(1, 11, 10), Location(1, 12, 11)))
+        )
+      )
+    )
+  }
+
   test("Statement should be properly parsed") {
     checkOk("while b { x = f(); }", Parser.parseStmt)
     checkOk("let mut x: i32 = 42", Parser.parseStmt)

@@ -1,11 +1,27 @@
 package inox.parsing
 
 import scala.util.control.Breaks
-import inox.ast.{BinaryOp, Block, Expr, Name, Stmt, StmtKind, Type, UnaryOp}
+import inox.ast.{
+  BinaryOp,
+  Block,
+  Expr,
+  Name,
+  Parameter,
+  Stmt,
+  StmtKind,
+  Type,
+  UnaryOp
+}
 import inox.{Result, Span, Spanned}
 
 /** A parser for Inox. */
 object Parser {
+
+  /** Parses a module in a source and returns the corresponding AST or a
+    * sequence of errors if parsing fails.
+    */
+  def parse(source: String): Result[inox.ast.Module, ParseError] =
+    Parser(source).module()
 
   /** Parses a statement in a source and returns the corresponding AST or a
     * sequence of errors if parsing fails.
@@ -30,6 +46,68 @@ object Parser {
 private class Parser(source: String) {
   private val lexer = Lexer(source)
   private var token = lexer.next()
+
+  /** Parses a module declaration. */
+  private def module(): Result[inox.ast.Module, ParseError] = {
+    var functions = Map[String, inox.ast.Function]()
+    val errorBuilder = IndexedSeq.newBuilder[ParseError]
+
+    while (token.item != Token.Eof) {
+      function() match {
+        case Result.Success((name, function)) =>
+          if (functions.contains(name.item))
+            errorBuilder += ParseError.DuplicateFunction(name)
+          else
+            functions = functions + (name.item -> function)
+        case Result.Failure(errors) =>
+          errorBuilder ++= errors
+          recover(Set(Token.FnKw))
+      }
+    }
+
+    val errors = errorBuilder.result()
+    if (errors.nonEmpty)
+      Result.Failure(errors)
+    else
+      Result.Success(functions)
+  }
+
+  /** Parses a function declaration. */
+  private def function(): Result[(Name, inox.ast.Function), ParseError] =
+    for {
+      _ <- consume(Token.FnKw)
+      name <- consume(Token.Name)
+      origins <- optional(
+        () =>
+          delimited(
+            () => list(() => consume(Token.Origin), Token.Comma, Token.RAngle),
+            Token.LAngle,
+            Token.RAngle
+          ).map(_.item),
+        Token.LAngle,
+        IndexedSeq()
+      )
+      params <- delimited(
+        () => list(parameter, Token.Comma, Token.RParen),
+        Token.LParen,
+        Token.RParen
+      ).map(_.item)
+      result <- optional(
+        () => { advance(); ty() },
+        Token.Arrow,
+        Type.Unit(token.span)
+      )
+      body <- block().map(_.item)
+    } yield (name, inox.ast.Function(origins, params, result, body))
+
+  /** Parses a function parameter. */
+  private def parameter(): Result[Parameter, ParseError] =
+    for {
+      mutable <- mut()
+      name <- consume(Token.Name)
+      _ <- consume(Token.Colon)
+      ty <- ty()
+    } yield Parameter(mutable, name, ty)
 
   /** Parses a block expression. */
   private def block(): Result[Spanned[Block], ParseError] =
@@ -165,6 +243,7 @@ private class Parser(source: String) {
     val op = token.item match {
       case Token.Bang  => Some(UnaryOp.Not)
       case Token.Minus => Some(UnaryOp.Neg)
+      case Token.Star  => Some(UnaryOp.Deref)
       case _           => None
     }
     op match {
