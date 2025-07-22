@@ -4,8 +4,8 @@ import inox.Span
 
 /** A function declaration. */
 case class Function(
-    origins: Seq[Name],
-    parameters: Seq[Parameter],
+    origins: IndexedSeq[Name],
+    parameters: IndexedSeq[Parameter],
     result: Type,
     body: Block
 ) {

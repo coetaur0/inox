@@ -12,7 +12,7 @@ object Expr {
   def If(cond: Expr, thn: Spanned[Block], els: Expr, span: Span): Expr =
     Spanned(ExprKind.If(cond, thn, els), span)
 
-  def Call(callee: Expr, args: Seq[Expr], span: Span): Expr =
+  def Call(callee: Expr, args: IndexedSeq[Expr], span: Span): Expr =
     Spanned(ExprKind.Call(callee, args), span)
 
   def Borrow(mutable: Boolean, expr: Expr, span: Span): Expr =
@@ -24,7 +24,7 @@ object Expr {
   def Unary(op: UnaryOp, expr: Expr, span: Span): Expr =
     Spanned(ExprKind.Unary(op, expr), span)
 
-  def Var(name: Name, origins: Seq[Option[Name]], span: Span): Expr =
+  def Var(name: Name, origins: IndexedSeq[Option[Name]], span: Span): Expr =
     Spanned(ExprKind.Var(name, origins), span)
 
   def IntLit(value: Int, span: Span): Expr =
@@ -41,11 +41,11 @@ object Expr {
 enum ExprKind {
   case Block(body: inox.ast.Block)
   case If(cond: Expr, thn: Spanned[inox.ast.Block], els: Expr)
-  case Call(callee: Expr, args: Seq[Expr])
+  case Call(callee: Expr, args: IndexedSeq[Expr])
   case Borrow(mutable: Boolean, expr: Expr)
   case Binary(op: BinaryOp, lhs: Expr, rhs: Expr)
   case Unary(op: UnaryOp, expr: Expr)
-  case Var(name: Name, origins: Seq[Option[Name]])
+  case Var(name: Name, origins: IndexedSeq[Option[Name]])
   case IntLit(value: Int)
   case BoolLit(value: Boolean)
   case Unit

@@ -6,7 +6,7 @@ import inox.{Span, Spanned}
 type Type = Spanned[TypeKind]
 
 object Type {
-  def Fn(params: Seq[Type], result: Type, span: Span): Type =
+  def Fn(params: IndexedSeq[Type], result: Type, span: Span): Type =
     Spanned(TypeKind.Fn(params, result), span)
 
   def Ref(origin: Option[Name], mutable: Boolean, ty: Type, span: Span): Type =
@@ -21,7 +21,7 @@ object Type {
 
 /** A type expression kind. */
 enum TypeKind {
-  case Fn(params: Seq[Type], result: Type)
+  case Fn(params: IndexedSeq[Type], result: Type)
   case Ref(origin: Option[Name], mutable: Boolean, ty: Type)
   case I32
   case Bool
