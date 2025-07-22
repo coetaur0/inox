@@ -1,15 +1,76 @@
 package inox.parsing
 
 import org.scalatest.funsuite.AnyFunSuite
-
 import inox.{Location, Result, Span, Spanned}
 
 class ParserTests extends AnyFunSuite {
+  test("Statement should be properly parsed") {
+    checkOk("while b { x = f(); }", Parser.parseStmt)
+    checkOk("let mut x: i32 = 42", Parser.parseStmt)
+    checkOk("let b: bool", Parser.parseStmt)
+    checkOk("let b = true", Parser.parseStmt)
+    checkOk("x = 4", Parser.parseStmt)
+    checkOk("f()", Parser.parseStmt)
+
+    checkError(
+      "while i32 {}",
+      Parser.parseStmt,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "an expression",
+          Spanned("i32", Span(Location(1, 7, 6), Location(1, 10, 9)))
+        )
+      )
+    )
+    checkError(
+      "while true x",
+      Parser.parseStmt,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "a '{'",
+          Spanned("x", Span(Location(1, 12, 11), Location(1, 13, 12)))
+        )
+      )
+    )
+    checkError(
+      "let x: 10",
+      Parser.parseStmt,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "a type expression",
+          Spanned("10", Span(Location(1, 8, 7), Location(1, 10, 9)))
+        )
+      )
+    )
+    checkError(
+      "x =",
+      Parser.parseStmt,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "an expression",
+          Spanned("", Span(Location(1, 4, 3), Location(1, 4, 3)))
+        )
+      )
+    )
+    checkError(
+      "return",
+      Parser.parseStmt,
+      IndexedSeq(
+        ParseError.UnexpectedSymbol(
+          "an expression",
+          Spanned("", Span(Location(1, 7, 6), Location(1, 7, 6)))
+        )
+      )
+    )
+  }
+
   test("Expressions should be properly parsed") {
     checkOk("(x + 1) * 4 < 10 == c || d", Parser.parseExpr)
     checkOk("!a && b", Parser.parseExpr)
     checkOk("!!true", Parser.parseExpr)
     checkOk("f(42, 19)(true)", Parser.parseExpr)
+    checkOk("if a { f() } else if b { g() } else { h() }", Parser.parseExpr)
+    checkOk("{}", Parser.parseExpr)
     checkOk("&mut 42", Parser.parseExpr)
     checkOk("x::<'a, '_>", Parser.parseExpr)
     checkOk("x", Parser.parseExpr)

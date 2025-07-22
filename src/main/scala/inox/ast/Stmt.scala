@@ -18,14 +18,14 @@ object Stmt {
   ): Stmt =
     Spanned(StmtKind.Let(mutable, name, ty, value), span)
 
-  def Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr): Stmt =
-    Spanned(StmtKind.Assign(lhs, rhs), lhs.span)
+  def Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr, span: Span): Stmt =
+    Spanned(StmtKind.Assign(lhs, rhs), span)
 
   def Return(expr: inox.ast.Expr, span: Span): Stmt =
     Spanned(StmtKind.Return(expr), span)
 
-  def Expr(expr: inox.ast.Expr, span: Span): Stmt =
-    Spanned(StmtKind.Expr(expr), span)
+  def Expr(kind: ExprKind, span: Span): Stmt =
+    Spanned(StmtKind.Expr(kind), span)
 }
 
 /** A statement kind. */
@@ -39,5 +39,5 @@ enum StmtKind {
   )
   case Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr)
   case Return(expr: inox.ast.Expr)
-  case Expr(expr: inox.ast.Expr)
+  case Expr(kind: ExprKind)
 }

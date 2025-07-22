@@ -1,12 +1,17 @@
 package inox.parsing
 
 import scala.util.control.Breaks
-
-import inox.ast.{BinaryOp, Block, Expr, Name, Type, UnaryOp}
+import inox.ast.{BinaryOp, Block, Expr, Name, Stmt, StmtKind, Type, UnaryOp}
 import inox.{Result, Span, Spanned}
 
 /** A parser for Inox. */
 object Parser {
+
+  /** Parses a statement in a source and returns the corresponding AST or a
+    * sequence of errors if parsing fails.
+    */
+  def parseStmt(source: String): Result[Stmt, ParseError] =
+    Parser(source).stmt()
 
   /** Parses an expression in a source and returns the corresponding AST or a
     * sequence of errors if parsing fails.
@@ -27,7 +32,95 @@ private class Parser(source: String) {
   private var token = lexer.next()
 
   /** Parses a block expression. */
-  private def block(): Result[Spanned[Block], ParseError] = ???
+  private def block(): Result[Spanned[Block], ParseError] =
+    for items <- delimited(
+        () => list(stmt, Token.Semicolon, Token.RBrace),
+        Token.LBrace,
+        Token.RBrace
+      )
+    yield {
+      val (stmts, result) =
+        items.item.lastOption.map(s => (s.item, s.span)) match {
+          case Some(StmtKind.Expr(expr), span) =>
+            (items.item.init, Spanned(expr, span))
+          case _ =>
+            (items.item, Expr.Unit(Span(items.span.end, items.span.end)))
+        }
+      Spanned(Block(stmts, result), items.span)
+    }
+
+  /** Parses a statement. */
+  private def stmt(): Result[Stmt, ParseError] =
+    token.item match {
+      case Token.WhileKw  => whileStmt()
+      case Token.LetKw    => letStmt()
+      case Token.ReturnKw => returnStmt()
+      case _              => assignStmt()
+    }
+
+  /** Parses a while statement. */
+  private def whileStmt(): Result[Stmt, ParseError] = {
+    val start = advance().span.start
+    for {
+      cond <- expr()
+      body <- block()
+    } yield Stmt.While(cond, body, Span(start, body.span.end))
+  }
+
+  /** Parses a let statement. */
+  private def letStmt(): Result[Stmt, ParseError] = {
+    val start = advance().span.start
+    for {
+      mutable <- mut()
+      name <- consume(Token.Name)
+      ty <- optional(
+        () => { advance(); for ty <- ty() yield Some(ty) },
+        Token.Colon,
+        None
+      )
+      value <- optional(
+        () => { advance(); for e <- expr() yield Some(e) },
+        Token.Equal,
+        None
+      )
+    } yield Stmt.Let(
+      mutable,
+      name,
+      ty,
+      value,
+      Span(
+        start,
+        value
+          .map(_.span.end)
+          .getOrElse(ty.map(_.span.end).getOrElse(name.span.end))
+      )
+    )
+  }
+
+  /** Parses a return statement. */
+  private def returnStmt(): Result[Stmt, ParseError] = {
+    val start = advance().span.start
+    for value <- expr() yield Stmt.Return(value, Span(start, value.span.end))
+  }
+
+  /** Parses an assignment or expression statement. */
+  private def assignStmt(): Result[Stmt, ParseError] = {
+    def assign(): Result[Option[Expr], ParseError] =
+      if (token.item == Token.Equal) {
+        advance()
+        for value <- expr() yield Some(value)
+      } else
+        Result.Success(None)
+
+    for {
+      lhs <- expr()
+      rhs <- assign()
+    } yield rhs match {
+      case Some(value) =>
+        Stmt.Assign(lhs, value, Span(lhs.span.start, value.span.end))
+      case None => Stmt.Expr(lhs.item, lhs.span)
+    }
+  }
 
   /** Parses an expression. */
   private def expr(): Result[Expr, ParseError] =
@@ -294,7 +387,9 @@ private class Parser(source: String) {
       while (token.item != Token.Eof && token.item != end) {
         parse() match {
           case Result.Success(item)   => items += item
-          case Result.Failure(errors) => errorBuilder ++= errors
+          case Result.Failure(errors) =>
+            errorBuilder ++= errors
+            recover(Set(separator, end))
         }
 
         if (token.item == separator)
