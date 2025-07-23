@@ -5,7 +5,7 @@ import inox.{Span, Spanned}
 /** An expression. */
 type Expr = Spanned[ExprKind]
 
-object Expr {
+object Expr:
   def Block(body: Block, span: Span): Expr =
     Spanned(ExprKind.Block(body), span)
 
@@ -35,10 +35,9 @@ object Expr {
 
   def Unit(span: Span): Expr =
     Spanned(ExprKind.Unit, span)
-}
 
 /** An expression kind. */
-enum ExprKind {
+enum ExprKind:
   case Block(body: inox.ast.Block)
   case If(cond: Expr, thn: Spanned[inox.ast.Block], els: Expr)
   case Call(callee: Expr, args: IndexedSeq[Expr])
@@ -49,10 +48,9 @@ enum ExprKind {
   case IntLit(value: Int)
   case BoolLit(value: Boolean)
   case Unit
-}
 
 /** A binary operator. */
-enum BinaryOp {
+enum BinaryOp:
   case And
   case Or
   case Eq
@@ -65,11 +63,9 @@ enum BinaryOp {
   case Sub
   case Mul
   case Div
-}
 
 /** A unary operator. */
-enum UnaryOp {
+enum UnaryOp:
   case Deref
   case Not
   case Neg
-}

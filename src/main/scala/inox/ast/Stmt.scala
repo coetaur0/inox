@@ -5,7 +5,7 @@ import inox.{Span, Spanned}
 /** A statement. */
 type Stmt = Spanned[StmtKind]
 
-object Stmt {
+object Stmt:
   def While(cond: inox.ast.Expr, body: Spanned[Block], span: Span): Stmt =
     Spanned(StmtKind.While(cond, body), span)
 
@@ -26,10 +26,9 @@ object Stmt {
 
   def Expr(kind: ExprKind, span: Span): Stmt =
     Spanned(StmtKind.Expr(kind), span)
-}
 
 /** A statement kind. */
-enum StmtKind {
+enum StmtKind:
   case While(cond: inox.ast.Expr, body: Spanned[Block])
   case Let(
       mutable: Boolean,
@@ -40,4 +39,3 @@ enum StmtKind {
   case Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr)
   case Return(expr: inox.ast.Expr)
   case Expr(kind: ExprKind)
-}
