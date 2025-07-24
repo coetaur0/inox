@@ -2,6 +2,9 @@ package inox.ir
 
 import inox.{Span, Spanned}
 
+/** A block of instructions. */
+type Block = IndexedSeq[Instr]
+
 /** An IR instruction. */
 type Instr = Spanned[InstrKind]
 

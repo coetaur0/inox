@@ -2,7 +2,7 @@ package inox.ir
 
 import inox.Span
 
-/** An IR function declaration. */
+/** An IR function. */
 case class Function(
     originCount: Int,
     paramCount: Int,

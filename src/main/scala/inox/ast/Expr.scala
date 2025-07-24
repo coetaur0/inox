@@ -6,10 +6,10 @@ import inox.{Span, Spanned}
 type Expr = Spanned[ExprKind]
 
 object Expr:
-  def Block(body: Block, span: Span): Expr =
+  def Block(body: BlockExpr, span: Span): Expr =
     Spanned(ExprKind.Block(body), span)
 
-  def If(cond: Expr, thn: Spanned[Block], els: Expr, span: Span): Expr =
+  def If(cond: Expr, thn: Spanned[BlockExpr], els: Expr, span: Span): Expr =
     Spanned(ExprKind.If(cond, thn, els), span)
 
   def Call(callee: Expr, args: IndexedSeq[Expr], span: Span): Expr =
@@ -38,8 +38,8 @@ object Expr:
 
 /** An expression kind. */
 enum ExprKind:
-  case Block(body: inox.ast.Block)
-  case If(cond: Expr, thn: Spanned[inox.ast.Block], els: Expr)
+  case Block(body: BlockExpr)
+  case If(cond: Expr, thn: Spanned[BlockExpr], els: Expr)
   case Call(callee: Expr, args: IndexedSeq[Expr])
   case Borrow(mutable: Boolean, expr: Expr)
   case Binary(op: BinaryOp, lhs: Expr, rhs: Expr)
@@ -48,6 +48,9 @@ enum ExprKind:
   case IntLit(value: Int)
   case BoolLit(value: Boolean)
   case Unit
+
+/** A block expression. */
+case class BlockExpr(stmts: IndexedSeq[Stmt], result: Expr)
 
 /** A binary operator. */
 enum BinaryOp:

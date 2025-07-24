@@ -3,20 +3,19 @@ package inox.ast
 import inox.Span
 
 /** A function declaration. */
-case class Function(
+case class FnDecl(
     origins: IndexedSeq[Name],
-    parameters: IndexedSeq[Parameter],
-    result: Type,
-    body: Block
+    parameters: IndexedSeq[ParamDecl],
+    result: TypeExpr,
+    body: BlockExpr
 ):
-
   /** The function's type. */
-  def ty: Type =
+  def ty: TypeExpr =
     val span =
       if parameters.isEmpty then result.span
       else Span(parameters.head.ty.span.start, result.span.end)
 
-    Type.Fn(parameters.map(_.ty), result, span)
+    TypeExpr.Fn(parameters.map(_.ty), result, span)
 
 /** A function parameter. */
-case class Parameter(mutable: Boolean, name: Name, ty: Type)
+case class ParamDecl(mutable: Boolean, name: Name, ty: TypeExpr)

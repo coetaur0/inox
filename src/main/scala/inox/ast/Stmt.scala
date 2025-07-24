@@ -6,36 +6,36 @@ import inox.{Span, Spanned}
 type Stmt = Spanned[StmtKind]
 
 object Stmt:
-  def While(cond: inox.ast.Expr, body: Spanned[Block], span: Span): Stmt =
+  def While(cond: Expr, body: Spanned[BlockExpr], span: Span): Stmt =
     Spanned(StmtKind.While(cond, body), span)
 
   def Let(
       mutable: Boolean,
       name: Name,
-      ty: Option[Type],
-      value: Option[inox.ast.Expr],
+      ty: Option[TypeExpr],
+      value: Option[Expr],
       span: Span
   ): Stmt =
     Spanned(StmtKind.Let(mutable, name, ty, value), span)
 
-  def Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr, span: Span): Stmt =
+  def Assign(lhs: Expr, rhs: Expr, span: Span): Stmt =
     Spanned(StmtKind.Assign(lhs, rhs), span)
 
-  def Return(expr: inox.ast.Expr, span: Span): Stmt =
+  def Return(expr: Expr, span: Span): Stmt =
     Spanned(StmtKind.Return(expr), span)
 
-  def Expr(kind: ExprKind, span: Span): Stmt =
-    Spanned(StmtKind.Expr(kind), span)
+  def ExprStmt(kind: ExprKind, span: Span): Stmt =
+    Spanned(StmtKind.ExprStmt(kind), span)
 
 /** A statement kind. */
 enum StmtKind:
-  case While(cond: inox.ast.Expr, body: Spanned[Block])
+  case While(cond: Expr, body: Spanned[BlockExpr])
   case Let(
       mutable: Boolean,
       name: Name,
-      ty: Option[Type],
-      value: Option[inox.ast.Expr]
+      ty: Option[TypeExpr],
+      value: Option[Expr]
   )
-  case Assign(lhs: inox.ast.Expr, rhs: inox.ast.Expr)
-  case Return(expr: inox.ast.Expr)
-  case Expr(kind: ExprKind)
+  case Assign(lhs: Expr, rhs: Expr)
+  case Return(expr: Expr)
+  case ExprStmt(kind: ExprKind)
