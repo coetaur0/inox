@@ -1,10 +1,9 @@
 package inox.lowering
 
 import scala.collection.mutable
-import inox.{Name, Result, Span, Spanned}
+import inox.{Name, Result, Span, Spanned, ast}
 import inox.ast.*
 import inox.ir.*
-import inox.lowering.LowerError.InvalidCallee
 
 /** A mapping from function names to their declared origins and type. */
 private type Globals = Map[String, (origins: OriginIds, ty: Type)]
@@ -110,11 +109,94 @@ private class Lowerer(globals: Globals):
   private val localIds = SymbolTable[LocalId]()
   private val locals = mutable.IndexedBuffer[Local]()
 
+  /** Lowers a statement to its IR representation. */
+  private def irStmt(stmt: Stmt): Result[Block, LowerError] =
+    stmt.item match
+      case ast.StmtKind.While(cond, body) => whileStmt(cond, body.item)
+      case ast.StmtKind.Let(mutable, name, ty, value) =>
+        letStmt(mutable, name, ty, value)
+      case ast.StmtKind.Assign(lhs, rhs) => assignStmt(lhs, rhs)
+      case ast.StmtKind.Return(value)    => returnStmt(value)
+      case ast.StmtKind.ExprStmt(kind)   =>
+        irExpr(Spanned(kind, stmt.span)).map(_._1)
+
+  /** Lowers a while statement to its IR representation. */
+  private def whileStmt(
+      cond: Expr,
+      body: BlockExpr
+  ): Result[Block, LowerError] =
+    for
+      (condBlock, condOperand, _) <- irExpr(cond)
+      (bodyBlock, _, _) <- blockExpr(body)
+    yield condBlock :+ Instr.While(condOperand, bodyBlock)
+
+  /** Lowers a let statement to its IR representation. */
+  private def letStmt(
+      mutable: Boolean,
+      name: Name,
+      ty: Option[TypeExpr],
+      value: Option[Expr]
+  ): Result[Block, LowerError] =
+    (ty.map(t => Lowerer.irType(originIds, t)), value.map(v => irExpr(v))) match
+      case (Some(t), Some(v)) =>
+        for
+          ty <- t
+          (block, operand, _) <- v
+        yield
+          locals += Local(mutable, ty)
+          localIds += (name.item, locals.length - 1)
+          block :+ Instr.Assign(
+            Place.Var(locals.length - 1, name.span),
+            operand
+          )
+      case (Some(t), None) =>
+        for ty <- t
+        yield
+          locals += Local(mutable, ty)
+          localIds += (name.item, locals.length - 1)
+          IndexedSeq()
+      case (None, Some(v)) =>
+        for (block, operand, ty) <- v
+        yield
+          locals += Local(mutable, ty)
+          localIds += (name.item, locals.length - 1)
+          block :+ Instr.Assign(
+            Place.Var(locals.length - 1, name.span),
+            operand
+          )
+      case (None, None) =>
+        Result.Failure(IndexedSeq(LowerError.UndefinedType(name)))
+
+  /** Lowers an assignment statement to its IR representation. */
+  private def assignStmt(lhs: Expr, rhs: Expr): Result[Block, LowerError] =
+    irExpr(lhs).flatMap { case (lhsBlock, lhsOperand, _) =>
+      irExpr(rhs).flatMap { case (rhsBlock, rhsOperand, _) =>
+        lhsOperand.item match
+          case OperandKind.Place(place) =>
+            Result.Success(
+              (rhsBlock :++ lhsBlock) :+ Instr.Assign(
+                Spanned(place, lhs.span),
+                rhsOperand
+              )
+            )
+          case _ =>
+            Result.Failure(IndexedSeq(LowerError.UnassignableExpr(lhs.span)))
+      }
+    }
+
+  /** Lowers a return statement to its IR representation. */
+  private def returnStmt(value: Expr): Result[Block, LowerError] =
+    for (block, operand, _) <- irExpr(value)
+    yield (block :+ Instr.Assign(
+      Place.Var(0, value.span),
+      operand
+    )) :+ Instr.Return
+
   /** Lowers an expression to its IR representation. */
   private def irExpr(expr: Expr): Result[(Block, Operand, Type), LowerError] =
     expr.item match
-      case ExprKind.Block(body)          => ???
-      case ExprKind.If(cond, thn, els)   => ???
+      case ExprKind.Block(body)          => blockExpr(body)
+      case ExprKind.If(cond, thn, els)   => ifExpr(cond, thn, els, expr.span)
       case ExprKind.Call(callee, args)   => callExpr(callee, args, expr.span)
       case ExprKind.Borrow(mut, expr)    => borrowExpr(mut, expr, expr.span)
       case ExprKind.Binary(op, lhs, rhs) => binaryExpr(op, lhs, rhs, expr.span)
@@ -142,7 +224,27 @@ private class Lowerer(globals: Globals):
   /** Lowers a block expression to its IR representation. */
   private def blockExpr(
       block: BlockExpr
-  ): Result[(Block, Operand, Type), LowerError] = ???
+  ): Result[(Block, Operand, Type), LowerError] =
+    val blockBuilder = IndexedSeq.newBuilder[Instr]
+    val errorBuilder = IndexedSeq.newBuilder[LowerError]
+    localIds.push(true)
+
+    for stmt <- block.stmts do
+      irStmt(stmt) match
+        case inox.Result.Success(item)   => blockBuilder ++= item
+        case inox.Result.Failure(errors) => errorBuilder ++= errors
+
+    irExpr(block.result) match
+      case inox.Result.Success((instrs, operand, ty)) =>
+        blockBuilder ++= instrs
+        localIds.pop()
+        val errors = errorBuilder.result()
+        if errors.nonEmpty then Result.Failure(errors)
+        else Result.Success((blockBuilder.result(), operand, ty))
+      case inox.Result.Failure(errors) =>
+        errorBuilder ++= errors
+        localIds.pop()
+        Result.Failure(errorBuilder.result())
 
   /** Lowers an if expression to its IR representation. */
   private def ifExpr(
@@ -188,7 +290,7 @@ private class Lowerer(globals: Globals):
         ty.value.item match
           case TypeKind.Fn(params, result) => result
           case _                           =>
-            errorBuilder += InvalidCallee(ty)
+            errorBuilder += LowerError.InvalidCallee(ty)
             Type.Unit(span)
 
       locals += Local(true, resultType)
