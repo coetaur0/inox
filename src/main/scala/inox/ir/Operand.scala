@@ -1,13 +1,12 @@
 package inox.ir
 
-import inox.{Span, Spanned}
-import inox.ast.Name
+import inox.{Name, Span, Spanned}
 
 /** An instruction operand. */
 type Operand = Spanned[OperandKind]
 
 object Operand:
-  def Place(place: inox.ir.Place, span: Span): Operand =
+  def Place(place: PlaceKind, span: Span): Operand =
     Spanned(OperandKind.Place(place), span)
 
   def Fn(
@@ -28,7 +27,7 @@ object Operand:
 
 /** An instruction operand's kind. */
 enum OperandKind:
-  case Place(place: inox.ir.Place)
+  case Place(place: PlaceKind)
   case Fn(name: Name, origins: IndexedSeq[Option[OriginId]])
   case I32(value: Int)
   case Bool(value: Boolean)

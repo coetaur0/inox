@@ -1,6 +1,6 @@
 package inox.ast
 
-import inox.Span
+import inox.{Name, Span}
 
 /** A function declaration. */
 case class FnDecl(

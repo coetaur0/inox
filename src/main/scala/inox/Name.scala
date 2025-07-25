@@ -1,4 +1,4 @@
-package inox.ast
+package inox
 
 import inox.Spanned
 

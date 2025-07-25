@@ -1,6 +1,6 @@
 package inox.ast
 
-import inox.{Span, Spanned}
+import inox.{Name, Span, Spanned}
 
 /** An expression. */
 type Expr = Spanned[ExprKind]

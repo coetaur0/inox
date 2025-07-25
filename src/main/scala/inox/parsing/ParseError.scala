@@ -1,7 +1,6 @@
 package inox.parsing
 
-import inox.Spanned
-import inox.ast.Name
+import inox.{Name, Spanned}
 
 /** A syntax error. */
 enum ParseError:

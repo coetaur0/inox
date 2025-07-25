@@ -7,12 +7,12 @@ class ParserTests extends AnyFunSuite:
   test("Function declarations should be properly parsed") {
     checkOk(
       "fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }",
-      Parser.parse
+      Parser.moduleDecl
     )
 
     checkError(
       "fn f() {} fn f() {}",
-      Parser.parse,
+      Parser.moduleDecl,
       IndexedSeq(
         ParseError.DuplicateFunction(
           Spanned("f", Span(Location(1, 14, 13), Location(1, 15, 14)))
@@ -21,7 +21,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "fn f() -> {}",
-      Parser.parse,
+      Parser.moduleDecl,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a type expression",
@@ -32,16 +32,16 @@ class ParserTests extends AnyFunSuite:
   }
 
   test("Statement should be properly parsed") {
-    checkOk("while b { x = f(); }", Parser.parseStmt)
-    checkOk("let mut x: i32 = 42", Parser.parseStmt)
-    checkOk("let b: bool", Parser.parseStmt)
-    checkOk("let b = true", Parser.parseStmt)
-    checkOk("x = 4", Parser.parseStmt)
-    checkOk("f()", Parser.parseStmt)
+    checkOk("while b { x = f(); }", Parser.stmt)
+    checkOk("let mut x: i32 = 42", Parser.stmt)
+    checkOk("let b: bool", Parser.stmt)
+    checkOk("let b = true", Parser.stmt)
+    checkOk("x = 4", Parser.stmt)
+    checkOk("f()", Parser.stmt)
 
     checkError(
       "while i32 {}",
-      Parser.parseStmt,
+      Parser.stmt,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "an expression",
@@ -51,7 +51,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "while true x",
-      Parser.parseStmt,
+      Parser.stmt,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a '{'",
@@ -61,7 +61,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "let x: 10",
-      Parser.parseStmt,
+      Parser.stmt,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a type expression",
@@ -71,7 +71,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "x =",
-      Parser.parseStmt,
+      Parser.stmt,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "an expression",
@@ -81,7 +81,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "return",
-      Parser.parseStmt,
+      Parser.stmt,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "an expression",
@@ -92,23 +92,23 @@ class ParserTests extends AnyFunSuite:
   }
 
   test("Expressions should be properly parsed") {
-    checkOk("(x + 1) * 4 < 10 == c || d", Parser.parseExpr)
-    checkOk("!a && b", Parser.parseExpr)
-    checkOk("!!true", Parser.parseExpr)
-    checkOk("f(42, 19)(true)", Parser.parseExpr)
-    checkOk("if a { f() } else if b { g() } else { h() }", Parser.parseExpr)
-    checkOk("{}", Parser.parseExpr)
-    checkOk("&mut 42", Parser.parseExpr)
-    checkOk("x::<'a, '_>", Parser.parseExpr)
-    checkOk("x", Parser.parseExpr)
-    checkOk("42", Parser.parseExpr)
-    checkOk("true", Parser.parseExpr)
-    checkOk("false", Parser.parseExpr)
-    checkOk("()", Parser.parseExpr)
+    checkOk("(x + 1) * 4 < 10 == c || d", Parser.expr)
+    checkOk("!a && b", Parser.expr)
+    checkOk("!!true", Parser.expr)
+    checkOk("f(42, 19)(true)", Parser.expr)
+    checkOk("if a { f() } else if b { g() } else { h() }", Parser.expr)
+    checkOk("{}", Parser.expr)
+    checkOk("&mut 42", Parser.expr)
+    checkOk("x::<'a, '_>", Parser.expr)
+    checkOk("x", Parser.expr)
+    checkOk("42", Parser.expr)
+    checkOk("true", Parser.expr)
+    checkOk("false", Parser.expr)
+    checkOk("()", Parser.expr)
 
     checkError(
       "(x + 1",
-      Parser.parseExpr,
+      Parser.expr,
       IndexedSeq(
         ParseError.UnclosedDelimiter(
           "(",
@@ -119,7 +119,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "&i32",
-      Parser.parseExpr,
+      Parser.expr,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "an expression",
@@ -129,7 +129,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "x::",
-      Parser.parseExpr,
+      Parser.expr,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a '<'",
@@ -139,7 +139,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "x::<'a",
-      Parser.parseExpr,
+      Parser.expr,
       IndexedSeq(
         ParseError.UnclosedDelimiter(
           "<",
@@ -151,14 +151,14 @@ class ParserTests extends AnyFunSuite:
   }
 
   test("Type expressions should be properly parsed") {
-    checkOk("fn(i32, bool) -> i32", Parser.parseType)
-    checkOk("&'a mut i32", Parser.parseType)
-    checkOk("(i32)", Parser.parseType)
-    checkOk("bool", Parser.parseType)
+    checkOk("fn(i32, bool) -> i32", Parser.typeExpr)
+    checkOk("&'a mut i32", Parser.typeExpr)
+    checkOk("(i32)", Parser.typeExpr)
+    checkOk("bool", Parser.typeExpr)
 
     checkError(
       "(i32",
-      Parser.parseType,
+      Parser.typeExpr,
       IndexedSeq(
         ParseError.UnclosedDelimiter(
           "(",
@@ -169,7 +169,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "fn -> i32",
-      Parser.parseType,
+      Parser.typeExpr,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a '('",
@@ -179,7 +179,7 @@ class ParserTests extends AnyFunSuite:
     )
     checkError(
       "&true",
-      Parser.parseType,
+      Parser.typeExpr,
       IndexedSeq(
         ParseError.UnexpectedSymbol(
           "a type expression",

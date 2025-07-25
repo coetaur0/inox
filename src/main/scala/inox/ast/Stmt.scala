@@ -1,6 +1,6 @@
 package inox.ast
 
-import inox.{Span, Spanned}
+import inox.{Name, Span, Spanned}
 
 /** A statement. */
 type Stmt = Spanned[StmtKind]
