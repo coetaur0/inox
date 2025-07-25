@@ -13,16 +13,22 @@ private type OriginIds = Map[String, OriginId]
 
 /** An AST to IR lowerer. */
 object Lowerer:
+  /** Lowers a module declaration to its IR representation. */
+  def module(moduleDecl: ModuleDecl): Result[Module, LowerError] =
+    globals(moduleDecl).flatMap { globals =>
+      Lowerer(globals).irModule(moduleDecl)
+    }
+
   /** Returns a mapping from function names to their declared origin ids and
     * type.
     */
   private def globals(
-      module: inox.ast.ModuleDecl
+      moduleDecl: ModuleDecl
   ): Result[Globals, LowerError] =
     val globals = Map.newBuilder[String, (origins: OriginIds, ty: Type)]
     val errorBuilder = IndexedSeq.newBuilder[LowerError]
 
-    for (name, function) <- module do
+    for (name, function) <- moduleDecl do
       originIds(function) match
         case Result.Success(origins) =>
           irType(origins, function.ty) match
@@ -61,7 +67,7 @@ object Lowerer:
       case Ref(origin, mut, rType) =>
         for
           originId <- irOrigin(origins, origin)
-          ty <- irType(origins, ty)
+          ty <- irType(origins, rType)
         yield Type.Ref(originId, mut, ty, rType.span)
       case I32  => Result.Success(Type.I32(ty.span))
       case Bool => Result.Success(Type.Bool(ty.span))
@@ -108,6 +114,54 @@ private class Lowerer(globals: Globals):
   private var originIds = globals.head._2.origins
   private val localIds = SymbolTable[LocalId]()
   private val locals = mutable.IndexedBuffer[Local]()
+
+  /** Lowers a module declaration to its IR representation. */
+  private def irModule(moduleDecl: ModuleDecl): Result[Module, LowerError] =
+    val functions = Map.newBuilder[String, Function]
+    val errorBuilder = IndexedSeq.newBuilder[LowerError]
+
+    for (name, fnDecl) <- moduleDecl do
+      irFunction(name, fnDecl) match
+        case Result.Success(function) => functions += (name -> function)
+        case Result.Failure(errors)   => errorBuilder ++= errors
+
+    val errors = errorBuilder.result()
+    if errors.nonEmpty then Result.Failure(errors)
+    else Result.Success(functions.result())
+
+  /** Lowers a function declaration to its IR representation. */
+  private def irFunction(
+      name: String,
+      fnDecl: FnDecl
+  ): Result[Function, LowerError] =
+    originIds = globals(name).origins
+    localIds.clear()
+    locals.clear()
+
+    val errorBuilder = IndexedSeq.newBuilder[LowerError]
+
+    Lowerer.irType(originIds, fnDecl.result) match
+      case Result.Success(ty)     => locals += Local(true, ty)
+      case Result.Failure(errors) => errorBuilder ++= errors
+
+    for param <- fnDecl.parameters do
+      if !(localIds += (param.name.item, locals.length)) then
+        errorBuilder += LowerError.DuplicateParameter(param.name)
+      else
+        Lowerer.irType(originIds, param.ty) match
+          case inox.Result.Success(ty)     => locals += Local(param.mutable, ty)
+          case inox.Result.Failure(errors) => errorBuilder ++= errors
+
+    val errors = errorBuilder.result()
+    if errors.nonEmpty then Result.Failure(errors)
+    else
+      for (block, operand, _) <- blockExpr(fnDecl.body)
+      yield Function(
+        originIds.size,
+        fnDecl.parameters.length,
+        locals.toIndexedSeq,
+        block :+ Instr.Assign(Place.Var(0, operand.span), operand)
+      )
 
   /** Lowers a statement to its IR representation. */
   private def irStmt(stmt: Stmt): Result[Block, LowerError] =
