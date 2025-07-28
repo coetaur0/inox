@@ -20,3 +20,11 @@ enum Result[Item, Error]:
     this match
       case Success(item)   => f(item)
       case Failure(errors) => Failure(errors)
+
+  /** Applies some side effect function on the error values in a result if it is
+    * a failure.
+    */
+  def handleFailure(f: IndexedSeq[Error] => Unit): Unit =
+    this match
+      case Success(_)      => ()
+      case Failure(errors) => f(errors)

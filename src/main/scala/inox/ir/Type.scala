@@ -85,7 +85,7 @@ enum TypeKind:
 
   override def toString: String =
     this match
-      case Fn(params, result) => s"fn(${params.mkString(", ")}) -> ${result}"
+      case Fn(params, result) => s"fn(${params.mkString(", ")}) -> $result"
       case Ref(origin, mutable, ty) =>
         val mut = if mutable then "mut" else ""
         origin match

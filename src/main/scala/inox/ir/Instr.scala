@@ -1,6 +1,5 @@
 package inox.ir
 
-import inox.{Span, Spanned}
 import inox.ast.BinaryOp
 
 /** A block of instructions. */

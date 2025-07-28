@@ -3,32 +3,33 @@ package inox.parsing
 import scala.util.control.Breaks
 import inox.{Name, Result, Span, Spanned}
 import inox.ast.*
+import ParseError.*
 
 /** A parser for Inox. */
 object Parser:
   /** Parses a module declaration in a source and returns the corresponding AST
     * or a sequence of errors if parsing fails.
     */
-  def moduleDecl(source: String): Result[ModuleDecl, ParseError] =
-    Parser(source).moduleDecl()
+  def parseModule(source: String): Result[ModuleDecl, ParseError] =
+    Parser(source).parseModule()
 
   /** Parses a statement in a source and returns the corresponding AST or a
     * sequence of errors if parsing fails.
     */
-  def stmt(source: String): Result[Stmt, ParseError] =
-    Parser(source).stmt()
+  def parseStmt(source: String): Result[Stmt, ParseError] =
+    Parser(source).parseStmt()
 
   /** Parses an expression in a source and returns the corresponding AST or a
     * sequence of errors if parsing fails.
     */
-  def expr(source: String): Result[Expr, ParseError] =
-    Parser(source).expr()
+  def parseExpr(source: String): Result[Expr, ParseError] =
+    Parser(source).parseExpr()
 
   /** Parses a type expression in a source and returns the corresponding AST or
     * a sequence of errors if parsing fails.
     */
-  def typeExpr(source: String): Result[TypeExpr, ParseError] =
-    Parser(source).typeExpr()
+  def parseTypeExpr(source: String): Result[TypeExpr, ParseError] =
+    Parser(source).parseTypeExpr()
 
 /** A parser for Inox. */
 private class Parser(source: String):
@@ -36,15 +37,15 @@ private class Parser(source: String):
   private var token = lexer.next()
 
   /** Parses a module declaration. */
-  private def moduleDecl(): Result[ModuleDecl, ParseError] =
+  private def parseModule(): Result[ModuleDecl, ParseError] =
     val fnDecls = Map.newBuilder[String, FnDecl]
     val errorBuilder = IndexedSeq.newBuilder[ParseError]
 
     while token.item != Token.Eof do
-      fnDecl() match
+      parseFunction() match
         case Result.Success((name, function)) =>
           if fnDecls.result().contains(name.item) then
-            errorBuilder += ParseError.DuplicateFunction(name)
+            errorBuilder += DuplicateFunction(name)
           else fnDecls += (name.item -> function)
         case Result.Failure(errors) =>
           errorBuilder ++= errors
@@ -55,15 +56,16 @@ private class Parser(source: String):
     else Result.Success(fnDecls.result())
 
   /** Parses a function declaration. */
-  private def fnDecl(): Result[(Name, FnDecl), ParseError] =
+  private def parseFunction(): Result[(Name, FnDecl), ParseError] =
     for
       _ <- consume(Token.FnKw)
       name <- consume(Token.Name)
 
-      origins <- optional(
+      origins <- parseOptional(
         () =>
-          delimited(
-            () => list(() => consume(Token.Origin), Token.Comma, Token.RAngle),
+          parseDelimited(
+            () =>
+              parseList(() => consume(Token.Origin), Token.Comma, Token.RAngle),
             Token.LAngle,
             Token.RAngle
           ).map(_.item),
@@ -71,37 +73,37 @@ private class Parser(source: String):
         IndexedSeq()
       )
 
-      params <- delimited(
-        () => list(paramDecl, Token.Comma, Token.RParen),
+      params <- parseDelimited(
+        () => parseList(parseParameter, Token.Comma, Token.RParen),
         Token.LParen,
         Token.RParen
       ).map(_.item)
 
-      result <- optional(
+      result <- parseOptional(
         () =>
           advance()
-          typeExpr()
+          parseTypeExpr()
         ,
         Token.Arrow,
         TypeExpr.Unit(token.span)
       )
 
-      body <- blockExpr().map(_.item)
+      body <- parseBlock().map(_.item)
     yield (name, inox.ast.FnDecl(origins, params, result, body))
 
   /** Parses a function parameter. */
-  private def paramDecl(): Result[ParamDecl, ParseError] =
+  private def parseParameter(): Result[ParamDecl, ParseError] =
     for
-      mutable <- mut()
+      mutable <- parseMut()
       name <- consume(Token.Name)
       _ <- consume(Token.Colon)
-      ty <- typeExpr()
+      ty <- parseTypeExpr()
     yield ParamDecl(mutable, name, ty)
 
   /** Parses a block expression. */
-  private def blockExpr(): Result[Spanned[BlockExpr], ParseError] =
-    for items <- delimited(
-        () => list(stmt, Token.Semicolon, Token.RBrace),
+  private def parseBlock(): Result[Spanned[BlockExpr], ParseError] =
+    for items <- parseDelimited(
+        () => parseList(parseStmt, Token.Semicolon, Token.RBrace),
         Token.LBrace,
         Token.RBrace
       )
@@ -115,39 +117,39 @@ private class Parser(source: String):
       Spanned(BlockExpr(stmts, result), items.span)
 
   /** Parses a statement. */
-  private def stmt(): Result[Stmt, ParseError] =
+  private def parseStmt(): Result[Stmt, ParseError] =
     token.item match
-      case Token.WhileKw  => whileStmt()
-      case Token.LetKw    => letStmt()
-      case Token.ReturnKw => returnStmt()
-      case _              => assignStmt()
+      case Token.WhileKw  => parseWhile()
+      case Token.LetKw    => parseLet()
+      case Token.ReturnKw => parseReturn()
+      case _              => parseAssignment()
 
   /** Parses a while statement. */
-  private def whileStmt(): Result[Stmt, ParseError] =
+  private def parseWhile(): Result[Stmt, ParseError] =
     val start = advance().span.start
     for
-      cond <- expr()
-      body <- blockExpr()
+      cond <- parseExpr()
+      body <- parseBlock()
     yield Stmt.While(cond, body, Span(start, body.span.end))
 
   /** Parses a let statement. */
-  private def letStmt(): Result[Stmt, ParseError] =
+  private def parseLet(): Result[Stmt, ParseError] =
     val start = advance().span.start
     for
-      mutable <- mut()
+      mutable <- parseMut()
       name <- consume(Token.Name)
 
-      ty <- optional(
+      ty <- parseOptional(
         () =>
-          advance(); for ty <- typeExpr() yield Some(ty)
+          advance(); for ty <- parseTypeExpr() yield Some(ty)
         ,
         Token.Colon,
         None
       )
 
-      value <- optional(
+      value <- parseOptional(
         () =>
-          advance(); for e <- expr() yield Some(e)
+          advance(); for e <- parseExpr() yield Some(e)
         ,
         Token.Equal,
         None
@@ -166,20 +168,21 @@ private class Parser(source: String):
     )
 
   /** Parses a return statement. */
-  private def returnStmt(): Result[Stmt, ParseError] =
+  private def parseReturn(): Result[Stmt, ParseError] =
     val start = advance().span.start
-    for value <- expr() yield Stmt.Return(value, Span(start, value.span.end))
+    for value <- parseExpr()
+    yield Stmt.Return(value, Span(start, value.span.end))
 
   /** Parses an assignment or expression statement. */
-  private def assignStmt(): Result[Stmt, ParseError] =
+  private def parseAssignment(): Result[Stmt, ParseError] =
     def assign(): Result[Option[Expr], ParseError] =
       if token.item == Token.Equal then
         advance()
-        for value <- expr() yield Some(value)
+        for value <- parseExpr() yield Some(value)
       else Result.Success(None)
 
     for
-      lhs <- expr()
+      lhs <- parseExpr()
       rhs <- assign()
     yield rhs match
       case Some(value) =>
@@ -187,14 +190,14 @@ private class Parser(source: String):
       case None => Stmt.ExprStmt(lhs.item, lhs.span)
 
   /** Parses an expression. */
-  private def expr(): Result[Expr, ParseError] =
+  private def parseExpr(): Result[Expr, ParseError] =
     for
-      lhs <- unaryExpr()
-      expr <- binaryExpr(0, lhs)
+      lhs <- parseUnary()
+      expr <- parseBinary(0, lhs)
     yield expr
 
   /** Parses a binary expression. */
-  private def binaryExpr(prec: Int, lhs: Expr): Result[Expr, ParseError] =
+  private def parseBinary(prec: Int, lhs: Expr): Result[Expr, ParseError] =
     val (op, nextPrec) = token.item match
       case Token.PipeX2      => (BinaryOp.Or, 1)
       case Token.AmpersandX2 => (BinaryOp.And, 2)
@@ -212,9 +215,9 @@ private class Parser(source: String):
     if prec < nextPrec then
       advance()
       for
-        unary <- unaryExpr()
-        rhs <- binaryExpr(nextPrec, unary)
-        expr <- binaryExpr(
+        unary <- parseUnary()
+        rhs <- parseBinary(nextPrec, unary)
+        expr <- parseBinary(
           prec,
           Expr.Binary(op, lhs, rhs, Span(lhs.span.start, rhs.span.end))
         )
@@ -222,7 +225,7 @@ private class Parser(source: String):
     else Result.Success(lhs)
 
   /** Parses a unary expression. */
-  private def unaryExpr(): Result[Expr, ParseError] =
+  private def parseUnary(): Result[Expr, ParseError] =
     val op = token.item match
       case Token.Bang  => Some(UnaryOp.Not)
       case Token.Minus => Some(UnaryOp.Neg)
@@ -231,38 +234,38 @@ private class Parser(source: String):
     op match
       case Some(op) =>
         val start = advance().span.start
-        for operand <- unaryExpr()
+        for operand <- parseUnary()
         yield Expr.Unary(op, operand, Span(start, operand.span.end))
       case None =>
         for
-          callee <- primaryExpr()
-          call <- callExpr(callee)
+          callee <- parsePrimary()
+          call <- parseCall(callee)
         yield call
 
   /** Parses a sequence of call expressions. */
-  private def callExpr(callee: Expr): Result[Expr, ParseError] =
+  private def parseCall(callee: Expr): Result[Expr, ParseError] =
     if token.item == Token.LParen then
       for
-        args <- delimited(
-          () => list(expr, Token.Comma, Token.RParen),
+        args <- parseDelimited(
+          () => parseList(parseExpr, Token.Comma, Token.RParen),
           Token.LParen,
           Token.RParen
         )
-        call <- callExpr(
+        call <- parseCall(
           Expr.Call(callee, args.item, Span(callee.span.start, args.span.end))
         )
       yield call
     else Result.Success(callee)
 
   /** Parses a primary expression. */
-  private def primaryExpr(): Result[Expr, ParseError] =
+  private def parsePrimary(): Result[Expr, ParseError] =
     token.item match
-      case Token.LParen    => parenExpr()
-      case Token.IfKw      => ifExpr()
-      case Token.Ampersand => borrowExpr()
-      case Token.Name      => varExpr()
+      case Token.LParen    => parseParenExpr()
+      case Token.IfKw      => parseIf()
+      case Token.Ampersand => parseBorrow()
+      case Token.Name      => parseVar()
       case Token.LBrace    =>
-        for body <- blockExpr()
+        for body <- parseBlock()
         yield Expr.Block(body.item, body.span)
       case Token.IntLit =>
         val span = advance().span
@@ -273,42 +276,42 @@ private class Parser(source: String):
       case _              => Result.Failure(expected("an expression"))
 
   /** Parses a parenthesised expression. */
-  private def parenExpr(): Result[Expr, ParseError] =
+  private def parseParenExpr(): Result[Expr, ParseError] =
     val start = advance().span.start
     if token.item == Token.RParen then
       Result.Success(Expr.Unit(Span(start, advance().span.end)))
     else
       for
-        expr <- expr()
+        expr <- parseExpr()
         _ <- close("(", Token.RParen)
       yield expr
 
   /** Parses an if expression. */
-  private def ifExpr(): Result[Expr, ParseError] =
+  private def parseIf(): Result[Expr, ParseError] =
     def elseExpr(): Result[Expr, ParseError] =
       if token.item == Token.ElseKw then
         advance()
-        if token.item == Token.IfKw then ifExpr()
-        else for els <- blockExpr() yield Expr.Block(els.item, els.span)
+        if token.item == Token.IfKw then parseIf()
+        else for els <- parseBlock() yield Expr.Block(els.item, els.span)
       else Result.Success(Expr.Unit(token.span))
 
     val start = advance().span.start
     for
-      cond <- expr()
-      thn <- blockExpr()
+      cond <- parseExpr()
+      thn <- parseBlock()
       els <- elseExpr()
     yield Expr.If(cond, thn, els, Span(start, els.span.end))
 
   /** Parses a borrow expression. */
-  private def borrowExpr(): Result[Expr, ParseError] =
+  private def parseBorrow(): Result[Expr, ParseError] =
     val start = advance().span.start
     for
-      mutable <- mut()
-      expr <- expr()
+      mutable <- parseMut()
+      expr <- parseExpr()
     yield Expr.Borrow(mutable, expr, Span(start, expr.span.end))
 
   /** Parses a variable expression. */
-  private def varExpr(): Result[Expr, ParseError] =
+  private def parseVar(): Result[Expr, ParseError] =
     def originArg() =
       token.item match
         case Token.Origin =>
@@ -320,13 +323,13 @@ private class Parser(source: String):
           Result.Success(None)
         case _ => Result.Failure(expected("an origin"))
 
-    def originArgs(
+    def parseOriginArgs(
         default: Span
     ): Result[Spanned[IndexedSeq[Option[Name]]], ParseError] =
       if token.item == Token.ColonX2 then
         advance()
-        for origins <- delimited(
-            () => list(originArg, Token.Comma, Token.RAngle),
+        for origins <- parseDelimited(
+            () => parseList(originArg, Token.Comma, Token.RAngle),
             Token.LAngle,
             Token.RAngle
           )
@@ -335,7 +338,7 @@ private class Parser(source: String):
 
     for
       name <- consume(Token.Name)
-      origins <- originArgs(name.span)
+      origins <- parseOriginArgs(name.span)
     yield Expr.Var(
       name,
       origins.item,
@@ -343,66 +346,66 @@ private class Parser(source: String):
     )
 
   /** Parses a type expression. */
-  private def typeExpr(): Result[TypeExpr, ParseError] =
+  private def parseTypeExpr(): Result[TypeExpr, ParseError] =
     token.item match
-      case Token.LParen    => parenType()
-      case Token.FnKw      => fnType()
-      case Token.Ampersand => refType()
+      case Token.LParen    => parseParenType()
+      case Token.FnKw      => parseFnType()
+      case Token.Ampersand => parseRefType()
       case Token.I32Kw     => Result.Success(TypeExpr.I32(advance().span))
       case Token.BoolKw    => Result.Success(TypeExpr.Bool(advance().span))
       case _               => Result.Failure(expected("a type expression"))
 
   /** Parses a parenthesised type expression. */
-  private def parenType(): Result[TypeExpr, ParseError] =
+  private def parseParenType(): Result[TypeExpr, ParseError] =
     val start = advance().span.start
     if token.item == Token.RParen then
       Result.Success(TypeExpr.Unit(Span(start, advance().span.end)))
     else
       for
-        ty <- typeExpr()
+        ty <- parseTypeExpr()
         _ <- close("(", Token.RParen)
       yield ty
 
   /** Parses a function type expression. */
-  private def fnType(): Result[TypeExpr, ParseError] =
+  private def parseFnType(): Result[TypeExpr, ParseError] =
     val start = advance().span.start
     for
-      params <- delimited(
-        () => list(typeExpr, Token.Comma, Token.RParen),
+      params <- parseDelimited(
+        () => parseList(parseTypeExpr, Token.Comma, Token.RParen),
         Token.LParen,
         Token.RParen
       )
       _ <- consume(Token.Arrow)
-      result <- typeExpr()
+      result <- parseTypeExpr()
     yield TypeExpr.Fn(params.item, result, Span(start, result.span.end))
 
   /** Parses a reference type expression. */
-  private def refType(): Result[TypeExpr, ParseError] =
+  private def parseRefType(): Result[TypeExpr, ParseError] =
     val start = advance().span.start
     for
-      origin <- origin()
-      mutable <- mut()
-      ty <- typeExpr()
+      origin <- parseOrigin()
+      mutable <- parseMut()
+      ty <- parseTypeExpr()
     yield TypeExpr.Ref(origin, mutable, ty, Span(start, ty.span.end))
 
   /** Parses an optional origin annotation. */
-  private def origin(): Result[Option[Name], ParseError] =
-    optional(
+  private def parseOrigin(): Result[Option[Name], ParseError] =
+    parseOptional(
       () => for name <- consume(Token.Origin) yield Some(name),
       Token.Origin,
       None
     )
 
   /** Parses an optional mutability marker. */
-  private def mut(): Result[Boolean, ParseError] =
-    optional(
+  private def parseMut(): Result[Boolean, ParseError] =
+    parseOptional(
       () => for _ <- consume(Token.MutKw) yield true,
       Token.MutKw,
       false
     )
 
   /** Parses an item delimited by some `start` and `end` tokens. */
-  private def delimited[A](
+  private def parseDelimited[A](
       parse: () => Result[A, ParseError],
       start: Token,
       end: Token
@@ -416,7 +419,7 @@ private class Parser(source: String):
   /** Parses a list of items separated by some `separator` token and ending with
     * some `end` token.
     */
-  private def list[A](
+  private def parseList[A](
       parse: () => Result[A, ParseError],
       separator: Token,
       end: Token
@@ -444,7 +447,7 @@ private class Parser(source: String):
     * some default value if the next token in the source doesn't match the
     * `start` kind.
     */
-  private def optional[A](
+  private def parseOptional[A](
       parse: () => Result[A, ParseError],
       start: Token,
       default: A
@@ -476,17 +479,13 @@ private class Parser(source: String):
   private def close(start: String, end: Token): Result[Span, ParseError] =
     if token.item == end then Result.Success(advance().span)
     else
-      Result.Failure(
-        IndexedSeq(
-          ParseError.UnclosedDelimiter(start, end.toString, text)
-        )
-      )
+      Result.Failure(IndexedSeq(UnclosedDelimiter(start, end.toString, text)))
 
   /** Returns a syntax error indicating that something else than the next token
     * in the source was expected.
     */
   private def expected(message: String): IndexedSeq[ParseError] =
-    IndexedSeq(ParseError.UnexpectedSymbol(message, text))
+    IndexedSeq(UnexpectedSymbol(message, text))
 
   /** Resynchronises the parser at the next token that belongs to a list of
     * token kinds.

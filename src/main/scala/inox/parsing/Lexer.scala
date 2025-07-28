@@ -16,17 +16,17 @@ class Lexer(source: String):
         advance(2)
         consume(_ != '\n')
         next()
-      case Some('\'')                        => origin()
-      case Some(c) if c.isLetter || c == '_' => word()
+      case Some('\'')                        => lexOrigin()
+      case Some(c) if c.isLetter || c == '_' => lexWord()
       case Some(c) if c.isDigit              =>
         val start = location
         consume(_.isDigit)
         Spanned(Token.IntLit, Span(start, location))
-      case Some(_) => symbol()
+      case Some(_) => lexSymbol()
       case None    => Spanned(Token.Eof, Span(location, location))
 
   /** Tokenises a keyword, a name or a boolean literal. */
-  private def word(): Spanned[Token] =
+  private def lexWord(): Spanned[Token] =
     val start = location
     val kind = consume(c => c.isLetterOrDigit || c == '_') match
       case "bool"   => Token.BoolKw
@@ -44,7 +44,7 @@ class Lexer(source: String):
     Spanned(kind, Span(start, location))
 
   /** Tokenises an origin. */
-  private def origin(): Spanned[Token] =
+  private def lexOrigin(): Spanned[Token] =
     val start = location
     advance(1)
     val kind = consume(c => c.isLetterOrDigit || c == '_') match
@@ -53,7 +53,7 @@ class Lexer(source: String):
     Spanned(kind, Span(start, location))
 
   /** Tokenises an operator or punctuation symbol. */
-  private def symbol(): Spanned[Token] =
+  private def lexSymbol(): Spanned[Token] =
     val (kind, length) = (peek(0), peek(1)) match
       case (Some('&'), Some('&')) => (Token.AmpersandX2, 2)
       case (Some('-'), Some('>')) => (Token.Arrow, 2)

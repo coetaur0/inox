@@ -1,8 +1,8 @@
 package inox.lowering
 
+import org.scalatest.funsuite.AnyFunSuite
 import inox.ir.Type
 import inox.lowering.LowerError.UndefinedType
-import org.scalatest.funsuite.AnyFunSuite
 import inox.{Location, Result, Span, Spanned}
 import inox.parsing.Parser
 
@@ -57,6 +57,9 @@ class LowererTests extends AnyFunSuite:
     checkOk(
       "fn main() { let x = 42; let r = &x; if g() { *r } else { 3 }; } fn g() -> bool { true }"
     )
+    checkOk(
+      "fn f() -> bool { let x = 3 + 1 * 4; if x == 7 { true } else { false } }"
+    )
 
     checkError(
       "fn main() { 3(); }",
@@ -109,9 +112,9 @@ class LowererTests extends AnyFunSuite:
 
   /** Checks that lowering the declarations in a source string succeeds. */
   private def checkOk(source: String): Unit =
-    Parser.moduleDecl(source) match
+    Parser.parseModule(source) match
       case Result.Success(ast) =>
-        Lowerer.module(ast) match
+        Lowerer.lowerModule(ast) match
           case Result.Success(ir)     => assert(true)
           case Result.Failure(errors) =>
             assert(
@@ -131,9 +134,9 @@ class LowererTests extends AnyFunSuite:
       source: String,
       expected: IndexedSeq[LowerError]
   ): Unit =
-    Parser.moduleDecl(source) match
+    Parser.parseModule(source) match
       case Result.Success(ast) =>
-        Lowerer.module(ast) match
+        Lowerer.lowerModule(ast) match
           case Result.Success(ir) =>
             assert(false, "Expected lowering errors in the input string.")
           case Result.Failure(errors) => assert(errors == expected)
