@@ -33,11 +33,9 @@ private class TypeChecker(module: inox.ir.Module):
         checkType(local.ty, i <= function.paramCount).handleFailure(errors =>
           b ++= errors
         )
-
       checkBlock(function.locals, function.body).handleFailure(errors =>
         b ++= errors
       )
-
       ()
     )
 

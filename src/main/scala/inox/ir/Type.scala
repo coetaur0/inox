@@ -2,6 +2,8 @@ package inox.ir
 
 import inox.{Span, Spanned}
 
+import scala.Predef.???
+
 /** An origin identifier. */
 type OriginId = Int
 
@@ -34,7 +36,9 @@ case class Type(value: Spanned[TypeKind]):
         lResult :< rResult
       case (Ref(lOrigin, lMut, lType), Ref(rOrigin, rMut, rType)) =>
         rOrigin.forall(o =>
-          lOrigin.forall(o == _)
+          lOrigin match
+            case Some(value) => value == o
+            case None        => false
         ) && (lMut || !rMut) && lType :< rType
       case (_, _) => this === that
 
@@ -88,10 +92,10 @@ enum TypeKind:
     this match
       case Fn(params, result) => s"fn(${params.mkString(", ")}) -> $result"
       case Ref(origin, mutable, ty) =>
-        val mut = if mutable then "mut" else ""
+        val mut = if mutable then "mut " else ""
         origin match
-          case Some(id) => s"&'$id $mut $ty"
-          case None     => s"&$mut $ty"
+          case Some(id) => s"&'$id $mut$ty"
+          case None     => s"&$mut$ty"
       case I32  => "i32"
       case Bool => "bool"
       case Unit => "()"

@@ -65,8 +65,8 @@ object Lowerer:
       case Ref(origin, mut, rType) =>
         for
           originId <- lowerOrigin(origins, origin)
-          ty <- lowerTypeExpr(origins, rType)
-        yield Type.Ref(originId, mut, ty, rType.span)
+          t <- lowerTypeExpr(origins, rType)
+        yield Type.Ref(originId, mut, t, ty.span)
       case I32  => Result.Success(Type.I32(ty.span))
       case Bool => Result.Success(Type.Bool(ty.span))
       case Unit => Result.Success(Type.Unit(ty.span))
@@ -255,13 +255,13 @@ private class Lowerer(globals: Globals):
       case ExprKind.Block(body)          => lowerBlock(body)
       case ExprKind.If(cond, thn, els)   => lowerIf(cond, thn, els, expr.span)
       case ExprKind.Call(callee, args)   => lowerCall(callee, args, expr.span)
-      case ExprKind.Borrow(mut, expr)    => lowerBorrow(mut, expr, expr.span)
+      case ExprKind.Borrow(mut, e)       => lowerBorrow(mut, e, expr.span)
       case ExprKind.Binary(op, lhs, rhs) => lowerBinary(op, lhs, rhs, expr.span)
-      case ExprKind.Unary(op, expr)      =>
+      case ExprKind.Unary(op, operand)   =>
         op match
-          case UnaryOp.Deref => lowerDeref(expr, expr.span)
-          case UnaryOp.Not   => lowerUnary(UnOp.Not, expr, expr.span)
-          case UnaryOp.Neg   => lowerUnary(UnOp.Neg, expr, expr.span)
+          case UnaryOp.Deref => lowerDeref(operand, expr.span)
+          case UnaryOp.Not   => lowerUnary(UnOp.Not, operand, expr.span)
+          case UnaryOp.Neg   => lowerUnary(UnOp.Neg, operand, expr.span)
       case ExprKind.Var(name, origins) =>
         for (operand, ty) <- lowerVar(name, origins, expr.span)
         yield (IndexedSeq(), operand, ty)
@@ -370,7 +370,7 @@ private class Lowerer(globals: Globals):
     yield
       val (instrs, source) = asPlace(operand, ty)
       val targetType = Type.Ref(None, mutable, ty, span)
-      locals += Local(true, ty)
+      locals += Local(true, targetType)
       val target = Place.Var(locals.length - 1, span)
       (
         (block :++ instrs) :+ Instr.Borrow(target, mutable, source),

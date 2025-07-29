@@ -19,7 +19,7 @@ enum TypeError:
   override def toString: String =
     this match
       case TypeError.IncompatibleTypes(found, expected) =>
-        s"${found.value.span}: Expected a value of type '${expected.value}', but found type '$found' instead."
+        s"${found.value.span}: Expected a value of type '$expected', but found type '$found' instead."
       case TypeError.InvalidArgNum(found, expected) =>
         s"${found.span}: Expected $expected arguments, but found $found instead."
       case TypeError.InvalidArgType(found, expected) =>

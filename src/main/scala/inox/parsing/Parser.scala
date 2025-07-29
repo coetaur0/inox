@@ -5,6 +5,8 @@ import inox.{Name, Result, Span, Spanned}
 import inox.ast.*
 import ParseError.*
 
+import scala.collection.mutable
+
 /** A parser for Inox. */
 object Parser:
   /** Parses a module declaration in a source and returns the corresponding AST
@@ -97,19 +99,37 @@ private class Parser(source: String):
 
   /** Parses a block expression. */
   private def parseBlock(): Result[Spanned[BlockExpr], ParseError] =
-    for items <- parseDelimited(
-        () => parseList(parseStmt, Token.Semicolon, Token.RBrace),
-        Token.LBrace,
-        Token.RBrace
-      )
-    yield
-      val (stmts, result) =
-        items.item.lastOption.map(s => (s.item, s.span)) match
-          case Some(StmtKind.ExprStmt(expr), span) =>
-            (items.item.init, Spanned(expr, span))
-          case _ =>
-            (items.item, Expr.Unit(Span(items.span.end, items.span.end)))
-      Spanned(BlockExpr(stmts, result), items.span)
+    for
+      open <- consume(Token.LBrace).map(_.span.start)
+      (stmts, result) <-
+        Result.build((b: mutable.Builder[ParseError, IndexedSeq[ParseError]]) =>
+          val stmts = IndexedSeq.newBuilder[Stmt]
+          var result: Option[Expr] = None
+
+          Breaks.breakable(
+            while token.item != Token.Eof && token.item != Token.RBrace do
+              parseStmt() match
+                case Result.Success(stmt) =>
+                  stmt.item match
+                    case StmtKind.ExprStmt(e) if token.item == Token.RBrace =>
+                      result = Some(Spanned(e, stmt.span))
+                      Breaks.break()
+                    case _ => stmts += stmt
+                case Result.Failure(errors) => b ++= errors
+
+              if token.item == Token.Semicolon then advance()
+              else Breaks.break()
+          )
+
+          (
+            stmts.result(),
+            result match
+              case Some(expr) => expr
+              case None => Expr.Unit(Span(token.span.start, token.span.start))
+          )
+        )
+      close <- close("{", Token.RBrace).map(_.end)
+    yield Spanned(BlockExpr(stmts, result), Span(open, close))
 
   /** Parses a statement. */
   private def parseStmt(): Result[Stmt, ParseError] =
