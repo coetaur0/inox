@@ -8,6 +8,7 @@ type LocalId = Int
 /** A place expression. */
 type Place = Spanned[PlaceKind]
 
+/** A place expression. */
 object Place:
   def Deref(place: Place, span: Span): Place =
     Spanned(PlaceKind.Deref(place), span)

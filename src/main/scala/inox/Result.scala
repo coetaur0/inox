@@ -1,5 +1,22 @@
 package inox
 
+import scala.collection.mutable
+
+/** A compilation result. */
+object Result:
+  /** Builds a new result depending on the effect of some function `f`. */
+  def build[Item, Error](
+      f: mutable.Builder[Error, IndexedSeq[Error]] => Item
+  ): Result[Item, Error] =
+    val errorBuilder = IndexedSeq.newBuilder[Error]
+    val item = f(errorBuilder)
+    if errorBuilder.result().isEmpty then Success(item)
+    else Failure(errorBuilder.result())
+
+  /** Instantiates a new failure with a given error. */
+  def fail[Item, Error](error: Error): Result[Item, Error] =
+    Failure(IndexedSeq(error))
+
 /** A compilation result. */
 enum Result[Item, Error]:
   case Success(item: Item)

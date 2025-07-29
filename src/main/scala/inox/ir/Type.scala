@@ -57,6 +57,7 @@ case class Type(value: Spanned[TypeKind]):
 
   override def toString: String = this.value.toString
 
+/** An IR type. */
 object Type:
   def Fn(params: IndexedSeq[Type], result: Type, span: Span): Type =
     Type(Spanned(TypeKind.Fn(params, result), span))

@@ -5,6 +5,7 @@ import inox.{Name, Span, Spanned}
 /** A statement. */
 type Stmt = Spanned[StmtKind]
 
+/** A statement. */
 object Stmt:
   def While(cond: Expr, body: Spanned[BlockExpr], span: Span): Stmt =
     Spanned(StmtKind.While(cond, body), span)

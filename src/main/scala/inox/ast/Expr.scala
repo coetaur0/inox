@@ -5,6 +5,7 @@ import inox.{Name, Span, Spanned}
 /** An expression. */
 type Expr = Spanned[ExprKind]
 
+/** An expression. */
 object Expr:
   def Block(body: BlockExpr, span: Span): Expr =
     Spanned(ExprKind.Block(body), span)

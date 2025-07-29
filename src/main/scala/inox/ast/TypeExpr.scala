@@ -5,6 +5,7 @@ import inox.{Name, Span, Spanned}
 /** A type expression. */
 type TypeExpr = Spanned[TypeExprKind]
 
+/** A type expression. */
 object TypeExpr:
   def Fn(params: IndexedSeq[TypeExpr], result: TypeExpr, span: Span): TypeExpr =
     Spanned(TypeExprKind.Fn(params, result), span)

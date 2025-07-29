@@ -5,6 +5,7 @@ import inox.{Name, Span, Spanned}
 /** An instruction operand. */
 type Operand = Spanned[OperandKind]
 
+/** An instruction operand. */
 object Operand:
   def Place(place: PlaceKind, span: Span): Operand =
     Spanned(OperandKind.Place(place), span)
