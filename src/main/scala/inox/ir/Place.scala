@@ -20,3 +20,9 @@ object Place:
 enum PlaceKind:
   case Deref(place: Place)
   case Var(id: LocalId)
+
+  /** Returns the local id of the variable that appears in the place expression.
+    */
+  def local: LocalId = this match
+    case Deref(p) => p.item.local
+    case Var(id)  => id

@@ -33,3 +33,10 @@ enum OperandKind:
   case I32(value: Int)
   case Bool(value: Boolean)
   case Unit
+
+  /** Returns the set of local ids of the variables that appear in the operand.
+    */
+  def locals: Set[LocalId] =
+    this match
+      case Place(place)                       => Set(place.local)
+      case Fn(_, _) | I32(_) | Bool(_) | Unit => Set.empty

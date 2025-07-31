@@ -1,7 +1,7 @@
 package inox.typing
 
-import inox.ir.Type
 import org.scalatest.funsuite.AnyFunSuite
+import inox.ir.Type
 import inox.{Location, Result, Span, Spanned}
 import inox.lowering.Lowerer
 import inox.parsing.Parser
@@ -153,9 +153,7 @@ class TypeCheckerTests extends AnyFunSuite:
         Lowerer.lowerModule(ast) match
           case Result.Success(ir) =>
             TypeChecker.checkModule(ir) match
-              case Result.Success(_) =>
-                println(ir)
-                assert(true)
+              case Result.Success(_)      => assert(true)
               case Result.Failure(errors) =>
                 assert(
                   false,
