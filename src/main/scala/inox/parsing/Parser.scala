@@ -1,11 +1,10 @@
 package inox.parsing
 
+import scala.collection.mutable
 import scala.util.control.Breaks
 import inox.{Name, Result, Span, Spanned}
 import inox.ast.*
 import ParseError.*
-
-import scala.collection.mutable
 
 /** A parser for Inox. */
 object Parser:
@@ -40,17 +39,17 @@ private class Parser(source: String):
 
   /** Parses a module declaration. */
   private def parseModule(): Result[ModuleDecl, ParseError] =
-    Result.build(b =>
+    Result.build(errors =>
       val fnDecls = Map.newBuilder[String, FnDecl]
 
       while token.item != Token.Eof do
         parseFunction() match
           case Result.Success((name, function)) =>
             if fnDecls.result().contains(name.item) then
-              b += DuplicateFunction(name)
+              errors += DuplicateFunction(name)
             else fnDecls += (name.item -> function)
-          case Result.Failure(errors) =>
-            b ++= errors
+          case Result.Failure(errs) =>
+            errors ++= errs
             recover(Set(Token.FnKw))
 
       fnDecls.result()
@@ -102,31 +101,32 @@ private class Parser(source: String):
     for
       open <- consume(Token.LBrace).map(_.span.start)
       (stmts, result) <-
-        Result.build((b: mutable.Builder[ParseError, IndexedSeq[ParseError]]) =>
-          val stmts = IndexedSeq.newBuilder[Stmt]
-          var result: Option[Expr] = None
+        Result.build(
+          (errors: mutable.Builder[ParseError, IndexedSeq[ParseError]]) =>
+            val stmts = IndexedSeq.newBuilder[Stmt]
+            var result: Option[Expr] = None
 
-          Breaks.breakable(
-            while token.item != Token.Eof && token.item != Token.RBrace do
-              parseStmt() match
-                case Result.Success(stmt) =>
-                  stmt.item match
-                    case StmtKind.ExprStmt(e) if token.item == Token.RBrace =>
-                      result = Some(Spanned(e, stmt.span))
-                      Breaks.break()
-                    case _ => stmts += stmt
-                case Result.Failure(errors) => b ++= errors
+            Breaks.breakable(
+              while token.item != Token.Eof && token.item != Token.RBrace do
+                parseStmt() match
+                  case Result.Success(stmt) =>
+                    stmt.item match
+                      case StmtKind.ExprStmt(e) if token.item == Token.RBrace =>
+                        result = Some(Spanned(e, stmt.span))
+                        Breaks.break()
+                      case _ => stmts += stmt
+                  case Result.Failure(errs) => errors ++= errs
 
-              if token.item == Token.Semicolon then advance()
-              else Breaks.break()
-          )
+                if token.item == Token.Semicolon then advance()
+                else Breaks.break()
+            )
 
-          (
-            stmts.result(),
-            result match
-              case Some(expr) => expr
-              case None => Expr.Unit(Span(token.span.start, token.span.start))
-          )
+            (
+              stmts.result(),
+              result match
+                case Some(expr) => expr
+                case None => Expr.Unit(Span(token.span.start, token.span.start))
+            )
         )
       close <- close("{", Token.RBrace).map(_.end)
     yield Spanned(BlockExpr(stmts, result), Span(open, close))
@@ -432,15 +432,15 @@ private class Parser(source: String):
       separator: Token,
       end: Token
   ): Result[IndexedSeq[A], ParseError] =
-    Result.build(b =>
+    Result.build(errors =>
       val items = IndexedSeq.newBuilder[A]
 
       Breaks.breakable {
         while token.item != Token.Eof && token.item != end do
           parse() match
-            case Result.Success(item)   => items += item
-            case Result.Failure(errors) =>
-              b ++= errors
+            case Result.Success(item) => items += item
+            case Result.Failure(errs) =>
+              errors ++= errs
               recover(Set(separator, end))
 
           if token.item == separator then advance()

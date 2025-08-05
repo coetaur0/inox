@@ -2,10 +2,8 @@ package inox.borrowing
 
 import org.scalatest.funsuite.AnyFunSuite
 import inox.Result
-import inox.ir.LocalId
 import inox.lowering.Lowerer
 import inox.parsing.Parser
-import inox.typing.TypeChecker
 
 class LiveAnalysisTests extends AnyFunSuite:
   test("Live variables should be correctly computed") {
@@ -34,7 +32,7 @@ class LiveAnalysisTests extends AnyFunSuite:
   /** Checks that the result of liveness analysis on the declaration in a source
     * string returns an `expected` sequence of local id sets.
     */
-  private def check(source: String, expected: IndexedSeq[Set[LocalId]]): Unit =
+  private def check(source: String, expected: IndexedSeq[LiveSet]): Unit =
     Parser.parseModule(source) match
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match

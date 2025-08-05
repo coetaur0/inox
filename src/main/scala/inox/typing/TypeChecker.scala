@@ -1,25 +1,23 @@
 package inox.typing
 
-import inox.ast.BinaryOp
-
 import scala.annotation.tailrec
+import scala.collection.mutable
 import inox.{Result, Spanned, ir}
+import inox.ast.BinaryOp
 import inox.ir.*
 import TypeError.*
-
-import scala.collection.mutable
 
 /** A type checker for Inox. */
 object TypeChecker:
   /** Type checks an IR module. */
   def checkModule(module: Module): Result[Unit, TypeError] =
-    Result.build(b =>
+    Result.build(errors =>
       val typeChecker = TypeChecker(module)
 
       for (_, function) <- module do
         typeChecker
           .checkFunction(function)
-          .handleFailure(errors => b ++= errors)
+          .handleFailure(errs => errors ++= errs)
 
       ()
     )
@@ -28,13 +26,13 @@ object TypeChecker:
 private class TypeChecker(module: inox.ir.Module):
   /** Type checks a function declaration. */
   private def checkFunction(function: Function): Result[Unit, TypeError] =
-    Result.build(b =>
+    Result.build(errors =>
       for (local, i) <- function.locals.zipWithIndex do
-        checkType(local.ty, i <= function.paramCount).handleFailure(errors =>
-          b ++= errors
+        checkType(local.ty, i <= function.paramCount).handleFailure(errs =>
+          errors ++= errs
         )
-      checkBlock(function.locals, function.body).handleFailure(errors =>
-        b ++= errors
+      checkBlock(function.locals, function.body).handleFailure(errs =>
+        errors ++= errs
       )
       ()
     )
@@ -44,9 +42,9 @@ private class TypeChecker(module: inox.ir.Module):
       locals: IndexedSeq[Local],
       block: Block
   ): Result[Unit, TypeError] =
-    Result.build(b =>
+    Result.build(errors =>
       for instr <- block do
-        checkInstr(locals, instr).handleFailure(errors => b ++= errors)
+        checkInstr(locals, instr).handleFailure(errs => errors ++= errs)
       ()
     )
 
@@ -117,18 +115,18 @@ private class TypeChecker(module: inox.ir.Module):
               )
             else
               Result.build(
-                (b: mutable.Builder[TypeError, IndexedSeq[TypeError]]) =>
+                (errors: mutable.Builder[TypeError, IndexedSeq[TypeError]]) =>
                   for (arg, param) <- args.zip(params) do
                     checkOperand(locals, arg) match
                       case Result.Success(argType) =>
                         if !(argType :< param) then
-                          b += InvalidArgType(argType, param)
-                      case Result.Failure(errors) => b ++= errors
+                          errors += InvalidArgType(argType, param)
+                      case Result.Failure(errs) => errors ++= errs
 
                   for (_, targetType) <- checkPlace(locals, target)
                   yield
                     if !(result :< targetType) then
-                      b += IncompatibleTypes(result, targetType)
+                      errors += IncompatibleTypes(result, targetType)
 
                   ()
               )
@@ -264,10 +262,10 @@ private class TypeChecker(module: inox.ir.Module):
       result: Type,
       withOrigins: Boolean = false
   ): Result[Unit, TypeError] =
-    Result.build(b =>
+    Result.build(errors =>
       for param <- params do
-        checkType(param, withOrigins).handleFailure(errors => b ++= errors)
-      checkType(result, withOrigins).handleFailure(errors => b ++= errors)
+        checkType(param, withOrigins).handleFailure(errs => errors ++= errs)
+      checkType(result, withOrigins).handleFailure(errs => errors ++= errs)
       ()
     )
 

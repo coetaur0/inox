@@ -1,13 +1,17 @@
 package inox.borrowing
 
+import scala.annotation.tailrec
 import inox.ir.{Block, Instr, LocalId, Operand}
+
+/** A set of live variables (local ids). */
+type LiveSet = Set[LocalId]
 
 /** Liveness analysis for Inox. */
 object LiveAnalysis:
   /** Computes the sets of live-before variables for a block of instructions,
     * given a set of variables that are live after it.
     */
-  def live(after: Set[LocalId], block: Block): IndexedSeq[Set[LocalId]] =
+  def live(after: LiveSet, block: Block): IndexedSeq[LiveSet] =
     var newAfter = after
     block.foldRight(IndexedSeq.empty)((instr, seq) =>
       val liveSets = liveInstr(newAfter, instr)
@@ -22,10 +26,7 @@ object LiveAnalysis:
   /** Computes the sets of live-before variables for an instruction, given a set
     * of variables that are live after it.
     */
-  private def liveInstr(
-      after: Set[LocalId],
-      instr: Instr
-  ): IndexedSeq[Set[LocalId]] =
+  private def liveInstr(after: LiveSet, instr: Instr): IndexedSeq[LiveSet] =
     instr match
       case Instr.While(cond, body)          => liveWhile(after, cond, body)
       case Instr.If(cond, thn, els)         => liveIf(after, cond, thn, els)
@@ -53,13 +54,14 @@ object LiveAnalysis:
     * set of variables that are live after it.
     */
   private def liveWhile(
-      after: Set[LocalId],
+      after: LiveSet,
       cond: Operand,
       body: Block
-  ): IndexedSeq[Set[LocalId]] =
+  ): IndexedSeq[LiveSet] =
     val liveCond = cond.item.locals
 
-    def fixpoint(after: Set[LocalId]): IndexedSeq[Set[LocalId]] =
+    @tailrec
+    def fixpoint(after: LiveSet): IndexedSeq[LiveSet] =
       val liveBody = live(after, body)
       val before = liveCond | after | liveBody.headOption.getOrElse(Set.empty)
       if before == after then IndexedSeq(before) :++ liveBody
@@ -71,11 +73,11 @@ object LiveAnalysis:
     * set of variables that are live after it.
     */
   private def liveIf(
-      after: Set[LocalId],
+      after: LiveSet,
       cond: Operand,
       thn: Block,
       els: Block
-  ): IndexedSeq[Set[LocalId]] =
+  ): IndexedSeq[LiveSet] =
     val liveThen = live(after, thn)
     val liveElse = live(after, els)
     val join =
