@@ -6,9 +6,8 @@ import inox.ir.LocalId
 type AliasSet = Set[(Boolean, LocalId)]
 
 /** A mapping binding local ids to the set of ids they may alias. */
-class AliasMap(
-    val bindings: IndexedSeq[AliasSet] = IndexedSeq.empty
-):
+class AliasMap(val bindings: IndexedSeq[AliasSet]) {
+
   /** Returns the set of aliases for some local id. */
   def apply(id: LocalId): AliasSet = bindings(id)
 
@@ -31,3 +30,4 @@ class AliasMap(
   /** Returns the union of two alias maps. */
   private def union(that: AliasMap): AliasMap =
     AliasMap(bindings.zip(that.bindings).map((lhs, rhs) => lhs | rhs))
+}

@@ -134,14 +134,16 @@ class LowererTests extends AnyFunSuite:
       source: String,
       expected: IndexedSeq[LowerError]
   ): Unit =
-    Parser.parseModule(source) match
+    Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match
+        Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
             assert(false, "Expected lowering errors in the input string.")
           case Result.Failure(errors) => assert(errors == expected)
+        }
       case Result.Failure(errors) =>
         assert(
           false,
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
+    }

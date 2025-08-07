@@ -7,27 +7,29 @@ import inox.ir.{Block, Instr, LocalId, Operand}
 type LiveSet = Set[LocalId]
 
 /** Liveness analysis for Inox. */
-object LiveAnalysis:
+object LiveAnalysis {
+
   /** Computes the sets of live-before variables for a block of instructions,
     * given a set of variables that are live after it.
     */
-  def live(after: LiveSet, block: Block): IndexedSeq[LiveSet] =
+  def live(after: LiveSet, block: Block): IndexedSeq[LiveSet] = {
     var newAfter = after
-    block.foldRight(IndexedSeq.empty)((instr, seq) =>
+    block.foldRight(IndexedSeq.empty) { (instr, seq) =>
       val liveSets = liveInstr(newAfter, instr)
       liveSets.headOption
-        .map(set =>
+        .map { set =>
           newAfter = set
           liveSets :++ seq
-        )
+        }
         .getOrElse(seq)
-    )
+    }
+  }
 
   /** Computes the sets of live-before variables for an instruction, given a set
     * of variables that are live after it.
     */
   private def liveInstr(after: LiveSet, instr: Instr): IndexedSeq[LiveSet] =
-    instr match
+    instr match {
       case Instr.While(cond, body)          => liveWhile(after, cond, body)
       case Instr.If(cond, thn, els)         => liveIf(after, cond, thn, els)
       case Instr.Call(target, callee, args) =>
@@ -49,6 +51,7 @@ object LiveAnalysis:
       case Instr.Unary(target, _, operand) =>
         IndexedSeq(after - target.item.local | operand.item.locals)
       case Instr.Return => IndexedSeq(after + 0)
+    }
 
   /** Computes the set of live-before variables for a while instruction, given a
     * set of variables that are live after it.
@@ -57,17 +60,19 @@ object LiveAnalysis:
       after: LiveSet,
       cond: Operand,
       body: Block
-  ): IndexedSeq[LiveSet] =
+  ): IndexedSeq[LiveSet] = {
     val liveCond = cond.item.locals
 
     @tailrec
-    def fixpoint(after: LiveSet): IndexedSeq[LiveSet] =
+    def fixpoint(after: LiveSet): IndexedSeq[LiveSet] = {
       val liveBody = live(after, body)
       val before = liveCond | after | liveBody.headOption.getOrElse(Set.empty)
       if before == after then IndexedSeq(before) :++ liveBody
       else fixpoint(before)
+    }
 
     fixpoint(after)
+  }
 
   /** Computes the set of live-before variables for an if instruction, given a
     * set of variables that are live after it.
@@ -77,10 +82,12 @@ object LiveAnalysis:
       cond: Operand,
       thn: Block,
       els: Block
-  ): IndexedSeq[LiveSet] =
+  ): IndexedSeq[LiveSet] = {
     val liveThen = live(after, thn)
     val liveElse = live(after, els)
     val join =
       liveThen.headOption.getOrElse(Set.empty)
         | liveElse.headOption.getOrElse(Set.empty)
     IndexedSeq(cond.item.locals | join) :++ liveThen :++ liveElse
+  }
+}

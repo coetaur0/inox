@@ -6,7 +6,7 @@ import inox.ast.BinaryOp
 type Block = IndexedSeq[Instr]
 
 /** An IR instruction. */
-enum Instr:
+enum Instr {
   case While(cond: Operand, body: Block)
   case If(cond: Operand, thn: Block, els: Block)
   case Call(target: Place, callee: Operand, args: IndexedSeq[Operand])
@@ -15,8 +15,10 @@ enum Instr:
   case Binary(target: Place, op: BinaryOp, lhs: Operand, rhs: Operand)
   case Unary(target: Place, op: UnOp, operand: Operand)
   case Return
+}
 
 /** A unary operator. */
-enum UnOp:
+enum UnOp {
   case Not
   case Neg
+}

@@ -1,30 +1,32 @@
 package inox.borrowing
 
+import scala.annotation.tailrec
 import inox.ir.*
 
-import scala.annotation.tailrec
-
 /** Alias analysis for Inox. */
-object AliasAnalysis:
+object AliasAnalysis {
+
   /** Returns the set of local ids that an instruction operand may alias, along
     * with their mutability.
     */
   private def aliasOperand(aliases: AliasMap, operand: Operand): AliasSet =
-    operand.item match
+    operand.item match {
       case OperandKind.Place(place) =>
         aliasPlace(aliases, place).foldLeft(Set.empty)((result, id) =>
           result | aliases(id)
         )
       case _ => Set.empty
+    }
 
   /** Returns the set of local ids that a place expression may alias. */
   private def aliasPlace(aliases: AliasMap, place: PlaceKind): Set[LocalId] =
-    place match
+    place match {
       case PlaceKind.Deref(place) =>
         aliasPlace(aliases, place.item).foldLeft(Set.empty)((result, id) =>
           result | aliases(id).map(_._2)
         )
       case PlaceKind.Var(id) => Set(id)
+    }
 
   /** Returns the set of local ids that the result of a call expression may
     * alias.
@@ -36,11 +38,11 @@ object AliasAnalysis:
       resultType: Type,
       arg: Operand
   ): AliasSet =
-    (paramType.value.item, resultType.value.item) match
+    (paramType.value.item, resultType.value.item) match {
       case (TypeKind.Ref(_, _, _), TypeKind.Ref(_, _, rType)) =>
         if paramType :< resultType then aliasOperand(aliases, arg)
         else
-          (rType.value.item, arg.item) match
+          (rType.value.item, arg.item) match {
             case (TypeKind.Ref(_, _, _), OperandKind.Place(place)) =>
               aliasResult(
                 aliases,
@@ -49,22 +51,79 @@ object AliasAnalysis:
                 Operand.Place(place, arg.span)
               )
             case (_, _) => Set.empty
+          }
       case _ => Set.empty
+    }
+
+  def initParams(
+      function: Function
+  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) = {
+    var locals = function.locals
+    var aliases: IndexedSeq[AliasSet] = function.locals.map(_ => Set.empty)
+
+    function.locals
+      .slice(1, function.paramCount + 1)
+      .zipWithIndex
+      .foldLeft((function.locals, function.locals.map(_ => Set.empty)))(
+        (result, param) =>
+          initParam(result._1, result._2, param._1, param._2 + 1)
+      )
+  }
+
+  private def initParam(
+      locals: IndexedSeq[Local],
+      aliases: IndexedSeq[AliasSet],
+      param: Local,
+      id: LocalId
+  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) =
+    param.ty.value.item match {
+      case TypeKind.Ref(_, mutable, rType) =>
+        val (newLocals, newAliases) =
+          initType(locals, aliases, mutable, rType)
+        (
+          newLocals,
+          newAliases.updated(id, Set((mutable, newLocals.length - 1)))
+        )
+      case _ => (locals, aliases)
+    }
+
+  private def initType(
+      locals: IndexedSeq[Local],
+      aliases: IndexedSeq[AliasSet],
+      mutable: Boolean,
+      ty: Type
+  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) =
+    ty.value.item match {
+      case TypeKind.Ref(_, mut, rType) =>
+        val (newLocals, newAliases) = initType(locals, aliases, mut, rType)
+        (
+          newLocals :+ Local(mutable, ty),
+          newAliases :+ Set((mut, newLocals.length - 1))
+        )
+      case _ => (locals :+ Local(mutable, ty), aliases :+ Set.empty)
+    }
+}
 
 /** Alias analysis for Inox. */
-private class AliasAnalysis(module: inox.ir.Module):
+private class AliasAnalysis(module: inox.ir.Module) {
+
+  /** Returns the alias maps for a function declaration's body. */
+  private def aliasFunction(function: Function): IndexedSeq[AliasMap] =
+    ???
+
   /** Returns the alias maps for a block of instructions. */
   private def aliasBlock(
       locals: IndexedSeq[Local],
       before: AliasMap,
       block: Block
-  ): IndexedSeq[AliasMap] =
+  ): IndexedSeq[AliasMap] = {
     var aliases = before
-    block.foldLeft(IndexedSeq.empty)((result, instr) =>
+    block.foldLeft(IndexedSeq.empty) { (result, instr) =>
       val after = aliasInstr(locals, aliases, instr)
       aliases = after.lastOption.getOrElse(aliases)
       result :++ after
-    )
+    }
+  }
 
   /** Returns the alias maps for an instruction. */
   private def aliasInstr(
@@ -72,7 +131,7 @@ private class AliasAnalysis(module: inox.ir.Module):
       before: AliasMap,
       instr: Instr
   ): IndexedSeq[AliasMap] =
-    instr match
+    instr match {
       case Instr.While(cond, body)          => aliasWhile(locals, before, body)
       case Instr.If(cond, thn, els)         => aliasIf(locals, before, thn, els)
       case Instr.Call(target, callee, args) =>
@@ -88,21 +147,24 @@ private class AliasAnalysis(module: inox.ir.Module):
         )
       case Instr.Binary(_, _, _, _) | Instr.Unary(_, _, _) | Instr.Return =>
         IndexedSeq(before)
+    }
 
   /** Returns the alias maps for a while instruction. */
   private def aliasWhile(
       locals: IndexedSeq[Local],
       before: AliasMap,
       body: Block
-  ): IndexedSeq[AliasMap] =
+  ): IndexedSeq[AliasMap] = {
     @tailrec
-    def fixpoint(before: AliasMap): IndexedSeq[AliasMap] =
+    def fixpoint(before: AliasMap): IndexedSeq[AliasMap] = {
       val bodyAliases = aliasBlock(locals, before, body)
       val after = bodyAliases.lastOption.getOrElse(before) | before
       if before === after then bodyAliases :+ after
       else fixpoint(after)
+    }
 
     fixpoint(before)
+  }
 
   /** Returns the alias maps for an if instruction. */
   private def aliasIf(
@@ -110,12 +172,13 @@ private class AliasAnalysis(module: inox.ir.Module):
       before: AliasMap,
       thn: Block,
       els: Block
-  ): IndexedSeq[AliasMap] =
+  ): IndexedSeq[AliasMap] = {
     val thenAliases = aliasBlock(locals, before, thn)
     val elseAliases = aliasBlock(locals, before, els)
     val join = thenAliases.lastOption.getOrElse(before)
       | elseAliases.lastOption.getOrElse(before)
     thenAliases :++ elseAliases :+ join
+  }
 
   /** Returns the alias maps for a call instruction. */
   private def aliasCall(
@@ -125,7 +188,7 @@ private class AliasAnalysis(module: inox.ir.Module):
       callee: Operand,
       args: IndexedSeq[Operand]
   ): IndexedSeq[AliasMap] =
-    operandType(locals, callee).value.item match
+    operandType(locals, callee).value.item match {
       case TypeKind.Fn(params, result) =>
         val aliasSet: AliasSet = params
           .zip(args)
@@ -140,6 +203,7 @@ private class AliasAnalysis(module: inox.ir.Module):
           )
         )
       case _ => IndexedSeq(before) // Unreachable.
+    }
 
   /** Returns the alias maps for a borrow instruction. */
   private def aliasBorrow(
@@ -147,7 +211,7 @@ private class AliasAnalysis(module: inox.ir.Module):
       target: Place,
       mutable: Boolean,
       source: Place
-  ): IndexedSeq[AliasMap] =
+  ): IndexedSeq[AliasMap] = {
     val aliasSet: AliasSet =
       AliasAnalysis
         .aliasPlace(before, source.item)
@@ -155,25 +219,30 @@ private class AliasAnalysis(module: inox.ir.Module):
     IndexedSeq(
       before.updated(AliasAnalysis.aliasPlace(before, target.item), aliasSet)
     )
+  }
 
   /** Returns the type of an operand in a given context. */
   private def operandType(
       locals: IndexedSeq[Local],
       operand: Operand
   ): Type =
-    operand.item match
+    operand.item match {
       case OperandKind.Place(place)      => placeType(locals, place)
       case OperandKind.Fn(name, origins) =>
         module(name.item).ty.substitute(origins)
       case OperandKind.I32(value)  => Type.I32(operand.span)
       case OperandKind.Bool(value) => Type.Bool(operand.span)
       case OperandKind.Unit        => Type.Unit(operand.span)
+    }
 
   /** Returns the type of a place in a given context. */
   private def placeType(locals: IndexedSeq[Local], place: PlaceKind): Type =
-    place match
+    place match {
       case PlaceKind.Deref(p) =>
-        placeType(locals, p.item).value.item match
+        placeType(locals, p.item).value.item match {
           case TypeKind.Ref(_, _, rType) => rType
           case _                         => Type.Unit(p.span) // Unreachable.
+        }
       case PlaceKind.Var(id) => locals(id).ty
+    }
+}

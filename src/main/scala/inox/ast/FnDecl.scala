@@ -8,14 +8,19 @@ case class FnDecl(
     parameters: IndexedSeq[ParamDecl],
     result: TypeExpr,
     body: BlockExpr
-):
+) {
+
   /** The function's type. */
   def ty: TypeExpr =
-    val span =
-      if parameters.isEmpty then result.span
-      else Span(parameters.head.ty.span.start, result.span.end)
-
-    TypeExpr.Fn(parameters.map(_.ty), result, span)
+    TypeExpr.Fn(
+      parameters.map(_.ty),
+      result,
+      Span(
+        parameters.headOption.map(_.ty).getOrElse(result).span.start,
+        result.span.end
+      )
+    )
+}
 
 /** A function parameter. */
 case class ParamDecl(mutable: Boolean, name: Name, ty: TypeExpr)

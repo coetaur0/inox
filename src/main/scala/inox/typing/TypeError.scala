@@ -4,7 +4,7 @@ import inox.{Name, Span, Spanned}
 import inox.ir.{Type, TypeKind}
 
 /** A type error. */
-enum TypeError:
+enum TypeError {
   case IncompatibleTypes(found: Type, expected: Type)
   case InvalidArgNum(found: Spanned[Int], expected: Int)
   case InvalidArgType(found: Type, expected: Type)
@@ -17,7 +17,7 @@ enum TypeError:
   case UnauthorisedBorrow(span: Span)
 
   override def toString: String =
-    this match
+    this match {
       case TypeError.IncompatibleTypes(found, expected) =>
         s"${found.value.span}: Expected a value of type '$expected', but found type '$found' instead."
       case TypeError.InvalidArgNum(found, expected) =>
@@ -38,3 +38,5 @@ enum TypeError:
         s"$span All references in function parameters and return types must be annotated with origins."
       case TypeError.UnauthorisedBorrow(span) =>
         s"$span: Cannot borrow this expression as mutable."
+    }
+}

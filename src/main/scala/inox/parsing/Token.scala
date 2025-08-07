@@ -1,7 +1,7 @@
 package inox.parsing
 
 /** A lexical token. */
-enum Token:
+enum Token {
   // Keywords:
   case BoolKw
   case ElseKw
@@ -54,7 +54,7 @@ enum Token:
   case Unknown
 
   override def toString: String =
-    this match
+    this match {
       case BoolKw      => "the 'bool' keyword"
       case ElseKw      => "the 'else' keyword"
       case FnKw        => "the 'fn' keyword"
@@ -96,3 +96,5 @@ enum Token:
       case Semicolon   => "a ';'"
       case Eof         => "the end of file"
       case Unknown     => "an unknown token"
+    }
+}

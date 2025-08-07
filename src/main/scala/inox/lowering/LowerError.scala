@@ -4,7 +4,7 @@ import inox.{Name, Span}
 import inox.ir.Type
 
 /** An AST to IR lowering error. */
-enum LowerError:
+enum LowerError {
   case DuplicateOrigin(name: Name)
   case DuplicateParameter(name: Name)
   case InvalidCallee(ty: Type)
@@ -15,7 +15,7 @@ enum LowerError:
   case UndefinedType(name: Name)
 
   override def toString: String =
-    this match
+    this match {
       case DuplicateOrigin(name) =>
         s"${name.span}: An origin with the name '${name.item}' already exists."
       case DuplicateParameter(name) =>
@@ -32,3 +32,5 @@ enum LowerError:
         s"${name.span}: Undefined origin '${name.item}'."
       case UndefinedType(name) =>
         s"${name.span}: Cannot determine the type of '${name.item}' without an annotation or value."
+    }
+}

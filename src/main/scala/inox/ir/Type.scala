@@ -2,18 +2,16 @@ package inox.ir
 
 import inox.{Span, Spanned}
 
-import scala.Predef.???
-
 /** An origin identifier. */
 type OriginId = Int
 
 /** An IR type. */
-case class Type(value: Spanned[TypeKind]):
+case class Type(value: Spanned[TypeKind]) {
   import TypeKind.*
 
   /** Checks if two types are equivalent. */
   def ===(that: Type): Boolean =
-    (this.value.item, that.value.item) match
+    (this.value.item, that.value.item) match {
       case (Fn(lParams, lResult), Fn(rParams, rResult)) =>
         lParams.length == rParams.length &&
         lParams.zip(rParams).forall { case (lParam, rParam) =>
@@ -24,10 +22,11 @@ case class Type(value: Spanned[TypeKind]):
         lOrigin == rOrigin && lMut == rMut && lType === rType
       case (I32, I32) | (Bool, Bool) | (Unit, Unit) => true
       case _                                        => false
+    }
 
   /** Checks if a type is a subtype of another. */
   def :<(that: Type): Boolean =
-    (this.value.item, that.value.item) match
+    (this.value.item, that.value.item) match {
       case (Fn(lParams, lResult), Fn(rParams, rResult)) =>
         lParams.length == rParams.length &&
         lParams.zip(rParams).forall { case (lParam, rParam) =>
@@ -41,12 +40,13 @@ case class Type(value: Spanned[TypeKind]):
             case None        => false
         ) && (lMut || !rMut) && lType :< rType
       case (_, _) => this === that
+    }
 
   /** Substitutes the origin ids in a type with the ids in some substitution
     * map.
     */
   def substitute(ids: IndexedSeq[Option[OriginId]]): Type =
-    this.value.item match
+    this.value.item match {
       case Fn(params, result) =>
         Type.Fn(
           params.map(_.substitute(ids)),
@@ -58,11 +58,13 @@ case class Type(value: Spanned[TypeKind]):
           origin.flatMap(id => if id < ids.length then ids(id) else origin)
         Type.Ref(newOrigin, mut, ty.substitute(ids), this.value.span)
       case _ => this
+    }
 
   override def toString: String = this.value.toString
+}
 
 /** An IR type. */
-object Type:
+object Type {
   def Fn(params: IndexedSeq[Type], result: Type, span: Span): Type =
     Type(Spanned(TypeKind.Fn(params, result), span))
 
@@ -79,9 +81,10 @@ object Type:
   def Bool(span: Span): Type = Type(Spanned(TypeKind.Bool, span))
 
   def Unit(span: Span): Type = Type(Spanned(TypeKind.Unit, span))
+}
 
 /** An IR type's kind. */
-enum TypeKind:
+enum TypeKind {
   case Fn(params: IndexedSeq[Type], result: Type)
   case Ref(origin: Option[OriginId], mutable: Boolean, ty: Type)
   case I32
@@ -89,7 +92,7 @@ enum TypeKind:
   case Unit
 
   override def toString: String =
-    this match
+    this match {
       case Fn(params, result) => s"fn(${params.mkString(", ")}) -> $result"
       case Ref(origin, mutable, ty) =>
         val mut = if mutable then "mut " else ""
@@ -99,3 +102,5 @@ enum TypeKind:
       case I32  => "i32"
       case Bool => "bool"
       case Unit => "()"
+    }
+}

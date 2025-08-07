@@ -204,8 +204,9 @@ class ParserTests extends AnyFunSuite:
       parse: String => Result[A, ParseError],
       expected: IndexedSeq[ParseError]
   ): Unit =
-    parse(source) match
+    parse(source) match {
       case Result.Success(result) =>
         assert(false, "Expected parse errors in the input string.")
       case Result.Failure(errors) =>
         assert(errors == expected)
+    }

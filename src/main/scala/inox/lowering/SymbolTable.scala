@@ -3,9 +3,10 @@ package inox.lowering
 import scala.collection.mutable
 
 /** A symbol table mapping names to values within a hierarchy of scopes. */
-private class SymbolTable[A]:
+private class SymbolTable[A] {
+
   /** A binding scope mapping names to values. */
-  private class Scope(shadowing: Boolean = true):
+  private class Scope(shadowing: Boolean = true) {
     private val bindings = mutable.Map.empty[String, A]
 
     /** Returns the value associated with a name in the scope, or `None` if
@@ -20,12 +21,14 @@ private class SymbolTable[A]:
       */
     def +=(binding: (name: String, value: A)): Boolean =
       if !shadowing && bindings.contains(binding.name) then false
-      else
+      else {
         bindings += binding
         true
+      }
 
     /** Clears the scope's contents. */
     def clear(): Unit = bindings.clear()
+  }
 
   private val scopes = mutable.Stack(Scope(false))
 
@@ -52,6 +55,8 @@ private class SymbolTable[A]:
     scopes.top += binding
 
   /** Clears the symbol table's contents. */
-  def clear(): Unit =
+  def clear(): Unit = {
     scopes.dropInPlace(scopes.length - 1)
     scopes.top.clear()
+  }
+}

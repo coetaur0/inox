@@ -148,27 +148,30 @@ class TypeCheckerTests extends AnyFunSuite:
 
   /** Checks that type checking the declarations in a source string succeeds. */
   private def checkOk(source: String): Unit =
-    Parser.parseModule(source) match
+    Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match
+        Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            TypeChecker.checkModule(ir) match
+            TypeChecker.checkModule(ir) match {
               case Result.Success(_)      => assert(true)
               case Result.Failure(errors) =>
                 assert(
                   false,
                   s"Unexpected type errors in the input string: ${errors.mkString("\n")}."
                 )
+            }
           case Result.Failure(errors) =>
             assert(
               false,
               s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
             )
+        }
       case Result.Failure(errors) =>
         assert(
           false,
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
+    }
 
   /** Checks that type checking the declarations in a source string returns an
     * `expected` sequence of type errors.
@@ -177,21 +180,24 @@ class TypeCheckerTests extends AnyFunSuite:
       source: String,
       expected: IndexedSeq[TypeError]
   ): Unit =
-    Parser.parseModule(source) match
+    Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match
+        Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            TypeChecker.checkModule(ir) match
+            TypeChecker.checkModule(ir) match {
               case Result.Success(_) =>
                 assert(false, "Expected type errors in the input string.")
               case Result.Failure(errors) => assert(errors == expected)
+            }
           case Result.Failure(errors) =>
             assert(
               false,
               s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
             )
+        }
       case Result.Failure(errors) =>
         assert(
           false,
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
+    }

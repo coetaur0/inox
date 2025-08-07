@@ -33,9 +33,9 @@ class LiveAnalysisTests extends AnyFunSuite:
     * string returns an `expected` sequence of local id sets.
     */
   private def check(source: String, expected: IndexedSeq[LiveSet]): Unit =
-    Parser.parseModule(source) match
+    Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match
+        Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
             assert(LiveAnalysis.live(Set(0), ir("main").body) == expected)
           case Result.Failure(errors) =>
@@ -43,8 +43,10 @@ class LiveAnalysisTests extends AnyFunSuite:
               false,
               s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
             )
+        }
       case Result.Failure(errors) =>
         assert(
           false,
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
+    }
