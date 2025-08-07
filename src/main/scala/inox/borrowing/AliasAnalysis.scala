@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import inox.ir.*
 
 /** Alias analysis for Inox. */
-object AliasAnalysis {
+private object AliasAnalysis {
 
   /** Returns the set of local ids that an instruction operand may alias, along
     * with their mutability.
@@ -55,22 +55,10 @@ object AliasAnalysis {
       case _ => Set.empty
     }
 
-  def initParams(
-      function: Function
-  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) = {
-    var locals = function.locals
-    var aliases: IndexedSeq[AliasSet] = function.locals.map(_ => Set.empty)
-
-    function.locals
-      .slice(1, function.paramCount + 1)
-      .zipWithIndex
-      .foldLeft((function.locals, function.locals.map(_ => Set.empty)))(
-        (result, param) =>
-          initParam(result._1, result._2, param._1, param._2 + 1)
-      )
-  }
-
-  private def initParam(
+  /** Extends the of locals and the initial alias map of a function with
+    * aliasing information for a parameter.
+    */
+  private def aliasParam(
       locals: IndexedSeq[Local],
       aliases: IndexedSeq[AliasSet],
       param: Local,
@@ -79,7 +67,7 @@ object AliasAnalysis {
     param.ty.value.item match {
       case TypeKind.Ref(_, mutable, rType) =>
         val (newLocals, newAliases) =
-          initType(locals, aliases, mutable, rType)
+          aliasType(locals, aliases, mutable, rType)
         (
           newLocals,
           newAliases.updated(id, Set((mutable, newLocals.length - 1)))
@@ -87,7 +75,10 @@ object AliasAnalysis {
       case _ => (locals, aliases)
     }
 
-  private def initType(
+  /** Extends the locals and the initial alias map of a function with aliasing
+    * information for a type appearing in a function parameter's signature.
+    */
+  private def aliasType(
       locals: IndexedSeq[Local],
       aliases: IndexedSeq[AliasSet],
       mutable: Boolean,
@@ -95,7 +86,7 @@ object AliasAnalysis {
   ): (IndexedSeq[Local], IndexedSeq[AliasSet]) =
     ty.value.item match {
       case TypeKind.Ref(_, mut, rType) =>
-        val (newLocals, newAliases) = initType(locals, aliases, mut, rType)
+        val (newLocals, newAliases) = aliasType(locals, aliases, mut, rType)
         (
           newLocals :+ Local(mutable, ty),
           newAliases :+ Set((mut, newLocals.length - 1))
@@ -105,11 +96,20 @@ object AliasAnalysis {
 }
 
 /** Alias analysis for Inox. */
-private class AliasAnalysis(module: inox.ir.Module) {
+class AliasAnalysis(module: inox.ir.Module) {
 
   /** Returns the alias maps for a function declaration's body. */
-  private def aliasFunction(function: Function): IndexedSeq[AliasMap] =
-    ???
+  def aliasFunction(function: Function): IndexedSeq[AliasMap] = {
+    val (locals, aliases) = function.locals
+      .slice(1, function.paramCount + 1)
+      .zipWithIndex
+      .foldLeft((function.locals, function.locals.map(_ => Set.empty)))(
+        (result: (IndexedSeq[Local], IndexedSeq[AliasSet]), param) =>
+          AliasAnalysis.aliasParam(result._1, result._2, param._1, param._2 + 1)
+      )
+
+    aliasBlock(locals, AliasMap(aliases), function.body)
+  }
 
   /** Returns the alias maps for a block of instructions. */
   private def aliasBlock(
@@ -159,7 +159,7 @@ private class AliasAnalysis(module: inox.ir.Module) {
     def fixpoint(before: AliasMap): IndexedSeq[AliasMap] = {
       val bodyAliases = aliasBlock(locals, before, body)
       val after = bodyAliases.lastOption.getOrElse(before) | before
-      if before === after then bodyAliases :+ after
+      if before == after then bodyAliases :+ after
       else fixpoint(after)
     }
 

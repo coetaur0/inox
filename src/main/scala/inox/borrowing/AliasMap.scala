@@ -20,12 +20,23 @@ class AliasMap(val bindings: IndexedSeq[AliasSet]) {
         .map((set, index) => if ids.contains(index) then aliases else set)
     )
 
-  /** Checks of two alias maps are equal. */
-  def ===(that: AliasMap): Boolean =
-    bindings == that.bindings
-
   /** Alias for `union`. */
   def |(that: AliasMap): AliasMap = union(that)
+
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: AliasMap => this.bindings == that.bindings
+      case _              => false
+    }
+
+  override def toString: String = {
+    val contents = bindings.zipWithIndex
+      .map { case (set, index) =>
+        s"($index) -> $set"
+      }
+      .mkString(", ")
+    s"{$contents}"
+  }
 
   /** Returns the union of two alias maps. */
   private def union(that: AliasMap): AliasMap =
