@@ -10,7 +10,7 @@ class TypeCheckerTests extends AnyFunSuite:
   test("Function declarations should be type checked properly") {
     checkOk("fn f<'a>(r: &'a i32) -> i32 { *r } fn main() { f::<'_>(&42); }")
     checkOk(
-      "fn f<'a, 'b>(x: &'a i32, g: fn(&'a i32) -> &'a i32) -> &'a i32 { g::<'a>(x) }"
+      "fn g<'b>(r: &'b i32) -> &'b i32 { r } fn f<'a>(x: &'a i32) -> &'a i32 { g::<'a>(x) }"
     )
 
     checkError(
@@ -133,14 +133,6 @@ class TypeCheckerTests extends AnyFunSuite:
             Type.I32(Span(Location(1, 36, 35), Location(1, 39, 38))),
             Span(Location(1, 32, 31), Location(1, 39, 38))
           )
-        )
-      )
-    )
-    checkError(
-      "fn main() { let x = 42; let y = &mut x; }",
-      IndexedSeq(
-        TypeError.UnauthorisedBorrow(
-          Span(Location(1, 38, 37), Location(1, 39, 38))
         )
       )
     )

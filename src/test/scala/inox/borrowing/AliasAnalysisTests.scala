@@ -14,9 +14,38 @@ class AliasAnalysisTests extends AnyFunSuite {
         |  r = &mut x;
         |}""".stripMargin,
       IndexedSeq(
-        AliasMap(IndexedSeq(Set(), Set(), Set(), Set((true, 1)))),
-        AliasMap(IndexedSeq(Set(), Set(), Set((true, 1)), Set((true, 1)))),
-        AliasMap(IndexedSeq(Set(), Set(), Set((true, 1)), Set((true, 1))))
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (true, Set()),
+            (true, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (true, Set()),
+            (true, Set(1))
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (true, Set(1)),
+            (true, Set(1))
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (true, Set(1)),
+            (true, Set(1))
+          )
+        )
       )
     )
     check(
@@ -25,24 +54,39 @@ class AliasAnalysisTests extends AnyFunSuite {
         |}""".stripMargin,
       IndexedSeq(
         AliasMap(
-          IndexedSeq(Set(), Set((false, 4)), Set((false, 1)), Set(), Set())
-        ),
-        AliasMap(
           IndexedSeq(
-            Set(),
-            Set((false, 4)),
-            Set((false, 1)),
-            Set((false, 1)),
-            Set()
+            (false, Set()),
+            (false, Set(4)),
+            (false, Set()),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set((false, 4)),
-            Set((false, 1)),
-            Set((false, 1)),
-            Set()
+            (false, Set()),
+            (false, Set(4)),
+            (false, Set(1)),
+            (false, Set()),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set(4)),
+            (false, Set(1)),
+            (false, Set(1)),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set(4)),
+            (false, Set(1)),
+            (false, Set(1)),
+            (false, Set())
           )
         )
       )
@@ -59,86 +103,125 @@ class AliasAnalysisTests extends AnyFunSuite {
         |  };
         |}""".stripMargin,
       IndexedSeq(
-        AliasMap(IndexedSeq(Set(), Set(), Set(), Set(), Set(), Set(), Set())),
-        AliasMap(IndexedSeq(Set(), Set(), Set(), Set(), Set(), Set(), Set())),
-        AliasMap(
-          IndexedSeq(Set(), Set(), Set(), Set(), Set((false, 1)), Set(), Set())
-        ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 1)),
-            Set((false, 1)),
-            Set(),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 1)),
-            Set((false, 1)),
-            Set(),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 2)),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 2)),
-            Set(),
-            Set((false, 2)),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(1)),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 2)),
-            Set(),
-            Set((false, 2)),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(1)),
+            (false, Set(1)),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 1), (false, 2)),
-            Set((false, 1)),
-            Set((false, 2)),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(1)),
+            (false, Set(1)),
+            (false, Set()),
+            (false, Set())
           )
         ),
         AliasMap(
           IndexedSeq(
-            Set(),
-            Set(),
-            Set(),
-            Set((false, 1), (false, 2)),
-            Set((false, 1)),
-            Set((false, 2)),
-            Set()
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(2)),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(2)),
+            (false, Set()),
+            (false, Set(2)),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(2)),
+            (false, Set()),
+            (false, Set(2)),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(1, 2)),
+            (false, Set(1)),
+            (false, Set(2)),
+            (false, Set())
+          )
+        ),
+        AliasMap(
+          IndexedSeq(
+            (false, Set()),
+            (false, Set()),
+            (false, Set()),
+            (false, Set(1, 2)),
+            (false, Set(1)),
+            (false, Set(2)),
+            (false, Set())
           )
         )
       )
@@ -153,7 +236,7 @@ class AliasAnalysisTests extends AnyFunSuite {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            assert(AliasAnalysis(ir).aliasFunction(ir("main")) == expected)
+            assert(AliasAnalysis(ir).aliasFunction(ir("main"))._2 == expected)
           case Result.Failure(errors) =>
             assert(
               false,

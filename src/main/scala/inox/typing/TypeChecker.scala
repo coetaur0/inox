@@ -133,7 +133,7 @@ private class TypeChecker(module: inox.ir.Module) {
                       case Result.Failure(errs) => errors ++= errs
                     }
 
-                  for (_, targetType) <- checkPlace(locals, target)
+                  for targetType <- checkPlace(locals, target)
                   yield
                     if !(result :< targetType) then
                       errors += IncompatibleTypes(result, targetType)
@@ -153,13 +153,11 @@ private class TypeChecker(module: inox.ir.Module) {
       source: Place
   ): Result[Unit, TypeError] =
     for {
-      (_, targetType) <- checkPlace(locals, target)
-      (sourceMut, sourceType) <- checkPlace(locals, source)
+      targetType <- checkPlace(locals, target)
+      sourceType <- checkPlace(locals, source)
       _ <- {
         val ty = Type.Ref(None, mutable, sourceType, target.span)
-        if mutable && !sourceMut then
-          Result.fail(UnauthorisedBorrow(source.span))
-        else checkCompatibility(targetType, ty)
+        checkCompatibility(targetType, ty)
       }
     } yield ()
 
@@ -170,7 +168,7 @@ private class TypeChecker(module: inox.ir.Module) {
       value: Operand
   ): Result[Unit, TypeError] =
     for {
-      (_, targetType) <- checkPlace(locals, target)
+      targetType <- checkPlace(locals, target)
       valueType <- checkOperand(locals, value)
       _ <- checkCompatibility(targetType, valueType)
     } yield ()
@@ -184,7 +182,7 @@ private class TypeChecker(module: inox.ir.Module) {
       rhs: Operand
   ): Result[Unit, TypeError] =
     for {
-      (_, targetType) <- checkPlace(locals, target)
+      targetType <- checkPlace(locals, target)
       lhsType <- checkOperand(locals, lhs)
       rhsType <- checkOperand(locals, rhs)
       _ <- op match {
@@ -213,7 +211,7 @@ private class TypeChecker(module: inox.ir.Module) {
       operand: Operand
   ): Result[Unit, TypeError] =
     for {
-      (_, targetType) <- checkPlace(locals, target)
+      targetType <- checkPlace(locals, target)
       operandType <- checkOperand(locals, operand)
       _ <-
         if op == UnOp.Not && operandType.value.item != TypeKind.Bool then
@@ -230,7 +228,7 @@ private class TypeChecker(module: inox.ir.Module) {
   ): Result[Type, TypeError] =
     operand.item match {
       case ir.OperandKind.Place(p) =>
-        checkPlace(locals, Spanned(p, operand.span)).map(_._2)
+        checkPlace(locals, Spanned(p, operand.span))
       case ir.OperandKind.Fn(name, origins) =>
         val fn = module(name.item)
         if origins.length != fn.originCount then
@@ -245,17 +243,17 @@ private class TypeChecker(module: inox.ir.Module) {
   private def checkPlace(
       locals: IndexedSeq[Local],
       place: Place
-  ): Result[(Boolean, Type), TypeError] =
+  ): Result[Type, TypeError] =
     place.item match {
       case PlaceKind.Deref(p) =>
-        checkPlace(locals, p).flatMap { (_, ty) =>
+        checkPlace(locals, p).flatMap { ty =>
           ty.value.item match {
-            case TypeKind.Ref(_, mut, rType) => Result.Success((mut, rType))
-            case _                           => Result.fail(InvalidDeref(ty))
+            case TypeKind.Ref(_, _, rType) => Result.Success(rType)
+            case _                         => Result.fail(InvalidDeref(ty))
           }
         }
       case PlaceKind.Var(id) =>
-        Result.Success((locals(id).mutable, locals(id).ty))
+        Result.Success(locals(id).ty)
     }
 
   /** Checks that an IR type is well-formed. */

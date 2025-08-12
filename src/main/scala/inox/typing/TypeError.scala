@@ -14,7 +14,6 @@ enum TypeError {
   case InvalidOperand(found: Type, expected: TypeKind)
   case InvalidOriginArgNum(name: Name, found: Int, expected: Int)
   case OriginNeeded(span: Span)
-  case UnauthorisedBorrow(span: Span)
 
   override def toString: String =
     this match {
@@ -36,7 +35,5 @@ enum TypeError {
         s"${name.span}: Expected $expected origin arguments for function '$name', but found $found instead."
       case TypeError.OriginNeeded(span) =>
         s"$span All references in function parameters and return types must be annotated with origins."
-      case TypeError.UnauthorisedBorrow(span) =>
-        s"$span: Cannot borrow this expression as mutable."
     }
 }

@@ -9,10 +9,14 @@ type LiveSet = Set[LocalId]
 /** Liveness analysis for Inox. */
 object LiveAnalysis {
 
+  /** Computes the sets of live-before variables for a function declaration. */
+  def liveFunction(function: inox.ir.Function): IndexedSeq[LiveSet] =
+    liveBlock(Set(0), function.body) :+ Set(0)
+
   /** Computes the sets of live-before variables for a block of instructions,
     * given a set of variables that are live after it.
     */
-  def live(after: LiveSet, block: Block): IndexedSeq[LiveSet] = {
+  private def liveBlock(after: LiveSet, block: Block): IndexedSeq[LiveSet] = {
     var newAfter = after
     block.foldRight(IndexedSeq.empty) { (instr, seq) =>
       val liveSets = liveInstr(newAfter, instr)
@@ -65,7 +69,7 @@ object LiveAnalysis {
 
     @tailrec
     def fixpoint(after: LiveSet): IndexedSeq[LiveSet] = {
-      val liveBody = live(after, body)
+      val liveBody = liveBlock(after, body)
       val before = liveCond | after | liveBody.headOption.getOrElse(Set.empty)
       if before == after then IndexedSeq(before) :++ liveBody
       else fixpoint(before)
@@ -83,8 +87,8 @@ object LiveAnalysis {
       thn: Block,
       els: Block
   ): IndexedSeq[LiveSet] = {
-    val liveThen = live(after, thn)
-    val liveElse = live(after, els)
+    val liveThen = liveBlock(after, thn)
+    val liveElse = liveBlock(after, els)
     val join =
       liveThen.headOption.getOrElse(Set.empty)
         | liveElse.headOption.getOrElse(Set.empty)

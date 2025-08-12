@@ -146,7 +146,8 @@ private class Lowerer(globals: Globals) {
 
     Result.build { errors =>
       Lowerer.lowerTypeExpr(originIds, fnDecl.result) match {
-        case Result.Success(ty)   => locals += Local(true, ty)
+        case Result.Success(ty) =>
+          locals += Local(true, Spanned("ret", fnDecl.result.span), ty)
         case Result.Failure(errs) => errors ++= errs
       }
 
@@ -155,7 +156,8 @@ private class Lowerer(globals: Globals) {
           errors += DuplicateParameter(param.name)
         else
           Lowerer.lowerTypeExpr(originIds, param.ty) match {
-            case inox.Result.Success(ty)   => locals += Local(param.mutable, ty)
+            case inox.Result.Success(ty) =>
+              locals += Local(param.mutable, param.name, ty)
             case inox.Result.Failure(errs) => errors ++= errs
           }
 
@@ -214,7 +216,7 @@ private class Lowerer(globals: Globals) {
           ty <- t
           (block, operand, _) <- v
         } yield {
-          locals += Local(mutable, ty)
+          locals += Local(mutable, name, ty)
           localIds += (name.item, locals.length - 1)
           block :+ Instr.Assign(
             Place.Var(locals.length - 1, name.span),
@@ -224,14 +226,14 @@ private class Lowerer(globals: Globals) {
       case (Some(t), None) =>
         for ty <- t
         yield {
-          locals += Local(mutable, ty)
+          locals += Local(mutable, name, ty)
           localIds += (name.item, locals.length - 1)
           IndexedSeq()
         }
       case (None, Some(v)) =>
         for (block, operand, ty) <- v
         yield {
-          locals += Local(mutable, ty)
+          locals += Local(mutable, name, ty)
           localIds += (name.item, locals.length - 1)
           block :+ Instr.Assign(
             Place.Var(locals.length - 1, name.span),
@@ -340,7 +342,7 @@ private class Lowerer(globals: Globals) {
       (thenBlock, thenOperand, ty) <- lowerBlock(thn.item)
       (elseBlock, elseOperand, _) <- lowerExpr(els)
     } yield {
-      locals += Local(true, ty)
+      locals += Local(true, Spanned("if_result", span), ty)
       val target = Place.Var(locals.length - 1, span)
       val block = condBlock :+ Instr.If(
         condOperand,
@@ -380,7 +382,7 @@ private class Lowerer(globals: Globals) {
                 Type.Unit(span)
             }
 
-          locals += Local(true, resultType)
+          locals += Local(true, Spanned("call_result", span), resultType)
           val target = Place.Var(locals.length - 1, span)
           instrs += Instr.Call(target, operand, operands.result())
 
@@ -398,7 +400,7 @@ private class Lowerer(globals: Globals) {
     yield {
       val (instrs, source) = asPlace(operand, ty)
       val targetType = Type.Ref(None, mutable, ty, span)
-      locals += Local(true, targetType)
+      locals += Local(true, Spanned("borrow_result", span), targetType)
       val target = Place.Var(locals.length - 1, span)
       (
         (block :++ instrs) :+ Instr.Borrow(target, mutable, source),
@@ -424,7 +426,7 @@ private class Lowerer(globals: Globals) {
             Type.I32(span)
           case _ => Type.Bool(span)
         }
-      locals += Local(true, ty)
+      locals += Local(true, Spanned("binary_result", span), ty)
       val place = Place.Var(locals.length - 1, span)
       val binInstr = Instr.Binary(place, op, lhsOperand, rhsOperand)
       (
@@ -462,7 +464,7 @@ private class Lowerer(globals: Globals) {
   ): Result[(Block, Operand, Type), LowerError] =
     for (block, operand, ty) <- lowerExpr(expr)
     yield {
-      locals += Local(true, ty)
+      locals += Local(true, Spanned("unary_result", span), ty)
       val place = Place.Var(locals.length - 1, span)
       (
         block :+ Instr.Unary(place, op, operand),
@@ -512,7 +514,7 @@ private class Lowerer(globals: Globals) {
       case OperandKind.Place(place) =>
         (IndexedSeq(), Spanned(place, operand.span))
       case _ =>
-        locals += Local(true, ty)
+        locals += Local(true, Spanned("op_place", operand.span), ty)
         val place = Place.Var(locals.length - 1, operand.span)
         (IndexedSeq(Instr.Assign(place, operand)), place)
     }

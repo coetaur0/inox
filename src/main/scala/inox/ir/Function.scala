@@ -1,6 +1,6 @@
 package inox.ir
 
-import inox.Span
+import inox.{Name, Span}
 
 /** An IR function. */
 case class Function(
@@ -23,4 +23,4 @@ case class Function(
 }
 
 /** A function parameter or local variable declaration. */
-case class Local(mutable: Boolean, ty: Type)
+case class Local(mutable: Boolean, name: Name, ty: Type)

@@ -9,7 +9,7 @@ class LiveAnalysisTests extends AnyFunSuite:
   test("Live variables should be correctly computed") {
     check(
       "fn main() -> bool { let cond = true; let mut x: bool; while cond { cond = false; x = cond; }; x }",
-      IndexedSeq(Set(2), Set(1, 2), Set.empty, Set(1), Set(2))
+      IndexedSeq(Set(2), Set(1, 2), Set.empty, Set(1), Set(2), Set(0))
     )
 
     check(
@@ -24,7 +24,8 @@ class LiveAnalysisTests extends AnyFunSuite:
         Set(1),
         Set(1),
         Set(3),
-        Set(3)
+        Set(3),
+        Set(0)
       )
     )
   }
@@ -37,7 +38,7 @@ class LiveAnalysisTests extends AnyFunSuite:
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            assert(LiveAnalysis.live(Set(0), ir("main").body) == expected)
+            assert(LiveAnalysis.liveFunction(ir("main")) == expected)
           case Result.Failure(errors) =>
             assert(
               false,

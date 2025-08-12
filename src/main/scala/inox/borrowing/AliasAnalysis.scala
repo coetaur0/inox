@@ -1,30 +1,33 @@
 package inox.borrowing
 
 import scala.annotation.tailrec
+import inox.{Name, Spanned}
 import inox.ir.*
 
 /** Alias analysis for Inox. */
 private object AliasAnalysis {
 
-  /** Returns the set of local ids that an instruction operand may alias, along
-    * with their mutability.
+  /** Returns the set of local ids that an instruction operand may alias.
     */
-  private def aliasOperand(aliases: AliasMap, operand: Operand): AliasSet =
+  private def aliasOperand(
+      aliases: AliasMap,
+      operand: Operand
+  ): AliasSet =
     operand.item match {
       case OperandKind.Place(place) =>
-        aliasPlace(aliases, place).foldLeft(Set.empty)((result, id) =>
-          result | aliases(id)
-        )
+        aliasPlace(aliases, place).foldLeft(Set.empty) { (result, id) =>
+          result | aliases(id)._2
+        }
       case _ => Set.empty
     }
 
   /** Returns the set of local ids that a place expression may alias. */
-  private def aliasPlace(aliases: AliasMap, place: PlaceKind): Set[LocalId] =
+  private def aliasPlace(aliases: AliasMap, place: PlaceKind): AliasSet =
     place match {
       case PlaceKind.Deref(place) =>
-        aliasPlace(aliases, place.item).foldLeft(Set.empty)((result, id) =>
-          result | aliases(id).map(_._2)
-        )
+        aliasPlace(aliases, place.item).foldLeft(Set.empty) { (result, id) =>
+          result | aliases(id)._2
+        }
       case PlaceKind.Var(id) => Set(id)
     }
 
@@ -55,22 +58,28 @@ private object AliasAnalysis {
       case _ => Set.empty
     }
 
-  /** Extends the of locals and the initial alias map of a function with
+  /** Extends the list of locals and the initial alias map of a function with
     * aliasing information for a parameter.
     */
   private def aliasParam(
       locals: IndexedSeq[Local],
-      aliases: IndexedSeq[AliasSet],
+      aliases: AliasMap,
       param: Local,
       id: LocalId
-  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) =
+  ): (IndexedSeq[Local], AliasMap) =
     param.ty.value.item match {
       case TypeKind.Ref(_, mutable, rType) =>
         val (newLocals, newAliases) =
-          aliasType(locals, aliases, mutable, rType)
+          aliasType(
+            locals,
+            aliases,
+            mutable,
+            Spanned("*" + param.name.item, param.ty.value.span),
+            rType
+          )
         (
           newLocals,
-          newAliases.updated(id, Set((mutable, newLocals.length - 1)))
+          newAliases.updated(id, Set(newLocals.length - 1))
         )
       case _ => (locals, aliases)
     }
@@ -80,18 +89,26 @@ private object AliasAnalysis {
     */
   private def aliasType(
       locals: IndexedSeq[Local],
-      aliases: IndexedSeq[AliasSet],
+      aliases: AliasMap,
       mutable: Boolean,
+      name: Name,
       ty: Type
-  ): (IndexedSeq[Local], IndexedSeq[AliasSet]) =
+  ): (IndexedSeq[Local], AliasMap) =
     ty.value.item match {
       case TypeKind.Ref(_, mut, rType) =>
-        val (newLocals, newAliases) = aliasType(locals, aliases, mut, rType)
-        (
-          newLocals :+ Local(mutable, ty),
-          newAliases :+ Set((mut, newLocals.length - 1))
+        val (newLocals, newAliases) = aliasType(
+          locals,
+          aliases,
+          mut,
+          Spanned("*" + name.item, name.span),
+          rType
         )
-      case _ => (locals :+ Local(mutable, ty), aliases :+ Set.empty)
+        (
+          newLocals :+ Local(mutable, name, ty),
+          newAliases :+ (mut, Set(newLocals.length - 1))
+        )
+      case _ =>
+        (locals :+ Local(mutable, name, ty), aliases :+ (false, Set.empty))
     }
 }
 
@@ -99,16 +116,21 @@ private object AliasAnalysis {
 class AliasAnalysis(module: inox.ir.Module) {
 
   /** Returns the alias maps for a function declaration's body. */
-  def aliasFunction(function: Function): IndexedSeq[AliasMap] = {
+  def aliasFunction(
+      function: Function
+  ): (IndexedSeq[Local], IndexedSeq[AliasMap]) = {
     val (locals, aliases) = function.locals
       .slice(1, function.paramCount + 1)
       .zipWithIndex
-      .foldLeft((function.locals, function.locals.map(_ => Set.empty)))(
-        (result: (IndexedSeq[Local], IndexedSeq[AliasSet]), param) =>
+      .foldLeft((function.locals, AliasMap.init(function.locals)))(
+        (result: (IndexedSeq[Local], AliasMap), param) =>
           AliasAnalysis.aliasParam(result._1, result._2, param._1, param._2 + 1)
       )
 
-    aliasBlock(locals, AliasMap(aliases), function.body)
+    (
+      locals,
+      aliasBlock(locals, aliases, function.body).+:(aliases)
+    )
   }
 
   /** Returns the alias maps for a block of instructions. */
@@ -215,7 +237,7 @@ class AliasAnalysis(module: inox.ir.Module) {
     val aliasSet: AliasSet =
       AliasAnalysis
         .aliasPlace(before, source.item)
-        .foldLeft(Set.empty)((result, id) => result + ((mutable, id)))
+        .foldLeft(Set.empty)((result, id) => result + id)
     IndexedSeq(
       before.updated(AliasAnalysis.aliasPlace(before, target.item), aliasSet)
     )
