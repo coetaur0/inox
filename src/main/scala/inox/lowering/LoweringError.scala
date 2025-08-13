@@ -4,7 +4,7 @@ import inox.{Name, Span}
 import inox.ir.Type
 
 /** An AST to IR lowering error. */
-enum LowerError {
+enum LoweringError {
   case DuplicateOrigin(name: Name)
   case DuplicateParameter(name: Name)
   case InvalidCallee(ty: Type)

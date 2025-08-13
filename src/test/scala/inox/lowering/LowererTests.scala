@@ -1,9 +1,8 @@
 package inox.lowering
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.ir.Type
-import inox.lowering.LowerError.UndefinedType
 import inox.{Location, Result, Span, Spanned}
+import inox.ir.Type
 import inox.parsing.Parser
 
 class LowererTests extends AnyFunSuite:
@@ -16,7 +15,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn f<'a, 'a>() {}",
       IndexedSeq(
-        LowerError.DuplicateOrigin(
+        LoweringError.DuplicateOrigin(
           Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11)))
         )
       )
@@ -24,7 +23,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn f(x: i32, x: i32) {}",
       IndexedSeq(
-        LowerError.DuplicateParameter(
+        LoweringError.DuplicateParameter(
           Spanned("x", Span(Location(1, 14, 13), Location(1, 15, 14)))
         )
       )
@@ -38,7 +37,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn main() { let x; }",
       IndexedSeq(
-        UndefinedType(
+        LoweringError.UndefinedType(
           Spanned("x", Span(Location(1, 17, 16), Location(1, 18, 17)))
         )
       )
@@ -46,7 +45,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn main() { 3 = 4; }",
       IndexedSeq(
-        LowerError.UnassignableExpr(
+        LoweringError.UnassignableExpr(
           Span(Location(1, 13, 12), Location(1, 14, 13))
         )
       )
@@ -64,7 +63,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn main() { 3(); }",
       IndexedSeq(
-        LowerError.InvalidCallee(
+        LoweringError.InvalidCallee(
           Type.I32(Span(Location(1, 13, 12), Location(1, 14, 13)))
         )
       )
@@ -72,7 +71,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn main() { *true; }",
       IndexedSeq(
-        LowerError.InvalidDeref(
+        LoweringError.InvalidDeref(
           Type.Bool(Span(Location(1, 14, 13), Location(1, 18, 17)))
         )
       )
@@ -80,7 +79,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn main() { x; }",
       IndexedSeq(
-        LowerError.UndefinedName(
+        LoweringError.UndefinedName(
           Spanned("x", Span(Location(1, 13, 12), Location(1, 14, 13)))
         )
       )
@@ -88,7 +87,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn f<'a>() {} fn main() { f::<'b>; }",
       IndexedSeq(
-        LowerError.UndefinedOrigin(
+        LoweringError.UndefinedOrigin(
           Spanned("'b", Span(Location(1, 31, 30), Location(1, 33, 32)))
         )
       )
@@ -103,7 +102,7 @@ class LowererTests extends AnyFunSuite:
     checkError(
       "fn f(x: &'a i32) {}",
       IndexedSeq(
-        LowerError.UndefinedOrigin(
+        LoweringError.UndefinedOrigin(
           Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11)))
         )
       )
@@ -132,7 +131,7 @@ class LowererTests extends AnyFunSuite:
     */
   private def checkError(
       source: String,
-      expected: IndexedSeq[LowerError]
+      expected: IndexedSeq[LoweringError]
   ): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>

@@ -1,8 +1,8 @@
 package inox.typing
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.ir.Type
 import inox.{Location, Result, Span, Spanned}
+import inox.ir.Type
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 

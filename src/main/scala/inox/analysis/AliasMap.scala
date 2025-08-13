@@ -1,4 +1,4 @@
-package inox.borrowing
+package inox.analysis
 
 import inox.ir.{Local, LocalId, TypeKind}
 
@@ -20,6 +20,19 @@ object AliasMap {
 
 /** A mapping binding local ids to the set of ids they may alias. */
 class AliasMap(val bindings: IndexedSeq[(Boolean, AliasSet)]) {
+
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: AliasMap => this.bindings == that.bindings
+      case _              => false
+    }
+
+  override def toString: String = {
+    val contents = bindings.zipWithIndex
+      .map { (info, index) => s"($index) -> (${info._1}, ${info._2})" }
+      .mkString(", ")
+    s"{$contents}"
+  }
 
   /** Returns the mutability and the set of aliases for some local id. */
   def apply(id: LocalId): (Boolean, AliasSet) = bindings(id)
@@ -48,25 +61,12 @@ class AliasMap(val bindings: IndexedSeq[(Boolean, AliasSet)]) {
   /** Alias for `union`. */
   def |(that: AliasMap): AliasMap = union(that)
 
-  override def equals(that: Any): Boolean =
-    that match {
-      case that: AliasMap => this.bindings == that.bindings
-      case _              => false
-    }
-
-  override def toString: String = {
-    val contents = bindings.zipWithIndex
-      .map { (info, index) => s"($index) -> (${info._1}, ${info._2})" }
-      .mkString(", ")
-    s"{$contents}"
-  }
-
   /** Returns a new alias map where a new binding has been appended. */
-  private def appended(mutable: Boolean, aliases: AliasSet): AliasMap =
+  def appended(mutable: Boolean, aliases: AliasSet): AliasMap =
     AliasMap(bindings :+ (mutable, aliases))
 
   /** Returns the union of two alias maps. */
-  private def union(that: AliasMap): AliasMap =
+  def union(that: AliasMap): AliasMap =
     AliasMap(
       bindings.zip(that.bindings).map((lhs, rhs) => (lhs._1, lhs._2 | rhs._2))
     )

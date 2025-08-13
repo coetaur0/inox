@@ -4,7 +4,7 @@ import scala.collection.mutable
 import inox.{Name, Result, Span, Spanned, ast}
 import inox.ast.*
 import inox.ir.*
-import LowerError.*
+import LoweringError.*
 
 /** A mapping from function names to their declared origins and type. */
 private type Globals = Map[String, (origins: OriginIds, ty: Type)]
@@ -16,7 +16,7 @@ private type OriginIds = Map[String, OriginId]
 object Lowerer {
 
   /** Lowers a module declaration to its IR representation. */
-  def lowerModule(moduleDecl: ModuleDecl): Result[Module, LowerError] =
+  def lowerModule(moduleDecl: ModuleDecl): Result[Module, LoweringError] =
     for {
       globals <- getGlobals(moduleDecl)
       result <- Lowerer(globals).lowerModule(moduleDecl)
@@ -25,7 +25,9 @@ object Lowerer {
   /** Returns a mapping from function names to their declared origin ids and
     * type.
     */
-  private def getGlobals(moduleDecl: ModuleDecl): Result[Globals, LowerError] =
+  private def getGlobals(
+      moduleDecl: ModuleDecl
+  ): Result[Globals, LoweringError] =
     Result.build { errors =>
       val globals = Map.newBuilder[String, (origins: OriginIds, ty: Type)]
 
@@ -45,7 +47,7 @@ object Lowerer {
   /** Returns a mapping from origin names to their ids for a given function
     * declaration.
     */
-  private def getOriginIds(fnDecl: FnDecl): Result[OriginIds, LowerError] =
+  private def getOriginIds(fnDecl: FnDecl): Result[OriginIds, LoweringError] =
     Result.build { errors =>
       val originIds = Map.newBuilder[String, OriginId]
 
@@ -61,7 +63,7 @@ object Lowerer {
   private def lowerTypeExpr(
       origins: OriginIds,
       ty: TypeExpr
-  ): Result[Type, LowerError] = {
+  ): Result[Type, LoweringError] = {
     import inox.ast.TypeExprKind.*
     ty.item match {
       case Fn(params, result) => lowerFnType(origins, params, result, ty.span)
@@ -82,7 +84,7 @@ object Lowerer {
       params: IndexedSeq[TypeExpr],
       result: TypeExpr,
       span: Span
-  ): Result[Type, LowerError] =
+  ): Result[Type, LoweringError] =
     Result.build { errors =>
       val paramTypes = IndexedSeq.newBuilder[Type]
 
@@ -105,7 +107,7 @@ object Lowerer {
   private def lowerOrigin(
       origins: OriginIds,
       origin: Option[Name]
-  ): Result[Option[OriginId], LowerError] =
+  ): Result[Option[OriginId], LoweringError] =
     origin match {
       case Some(name) =>
         if origins.contains(name.item) then
@@ -122,7 +124,9 @@ private class Lowerer(globals: Globals) {
   private val locals = mutable.IndexedBuffer[Local]()
 
   /** Lowers a module declaration to its IR representation. */
-  private def lowerModule(moduleDecl: ModuleDecl): Result[Module, LowerError] =
+  private def lowerModule(
+      moduleDecl: ModuleDecl
+  ): Result[Module, LoweringError] =
     Result.build { errors =>
       val functions = Map.newBuilder[String, Function]
 
@@ -139,7 +143,7 @@ private class Lowerer(globals: Globals) {
   private def lowerFunction(
       name: String,
       fnDecl: FnDecl
-  ): Result[Function, LowerError] = {
+  ): Result[Function, LoweringError] = {
     originIds = globals(name).origins
     localIds.clear()
     locals.clear()
@@ -179,7 +183,7 @@ private class Lowerer(globals: Globals) {
   }
 
   /** Lowers a statement to its IR representation. */
-  private def lowerStmt(stmt: Stmt): Result[Block, LowerError] =
+  private def lowerStmt(stmt: Stmt): Result[Block, LoweringError] =
     stmt.item match {
       case ast.StmtKind.While(cond, body) => lowerWhile(cond, body.item)
       case ast.StmtKind.Let(mutable, name, ty, value) =>
@@ -194,7 +198,7 @@ private class Lowerer(globals: Globals) {
   private def lowerWhile(
       cond: Expr,
       body: BlockExpr
-  ): Result[Block, LowerError] =
+  ): Result[Block, LoweringError] =
     for {
       (condBlock, condOperand, _) <- lowerExpr(cond)
       (bodyBlock, _, _) <- lowerBlock(body)
@@ -206,7 +210,7 @@ private class Lowerer(globals: Globals) {
       name: Name,
       ty: Option[TypeExpr],
       value: Option[Expr]
-  ): Result[Block, LowerError] =
+  ): Result[Block, LoweringError] =
     (
       ty.map(t => Lowerer.lowerTypeExpr(originIds, t)),
       value.map(v => lowerExpr(v))
@@ -245,7 +249,10 @@ private class Lowerer(globals: Globals) {
     }
 
   /** Lowers an assignment statement to its IR representation. */
-  private def lowerAssignment(lhs: Expr, rhs: Expr): Result[Block, LowerError] =
+  private def lowerAssignment(
+      lhs: Expr,
+      rhs: Expr
+  ): Result[Block, LoweringError] =
     for {
       (lhsBlock, lhsOperand, _) <- lowerExpr(lhs)
       (rhsBlock, rhsOperand, _) <- lowerExpr(rhs)
@@ -263,7 +270,7 @@ private class Lowerer(globals: Globals) {
     } yield result
 
   /** Lowers a return statement to its IR representation. */
-  private def lowerReturn(value: Expr): Result[Block, LowerError] =
+  private def lowerReturn(value: Expr): Result[Block, LoweringError] =
     for (block, operand, _) <- lowerExpr(value)
     yield (block :+ Instr.Assign(
       Place.Var(0, value.span),
@@ -273,7 +280,7 @@ private class Lowerer(globals: Globals) {
   /** Lowers an expression to its IR representation. */
   private def lowerExpr(
       expr: Expr
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     expr.item match {
       case ExprKind.Block(body)          => lowerBlock(body)
       case ExprKind.If(cond, thn, els)   => lowerIf(cond, thn, els, expr.span)
@@ -306,7 +313,7 @@ private class Lowerer(globals: Globals) {
   /** Lowers a block expression to its IR representation. */
   private def lowerBlock(
       block: BlockExpr
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     Result.build { errors =>
       val blockBuilder = IndexedSeq.newBuilder[Instr]
       localIds.push(true)
@@ -336,7 +343,7 @@ private class Lowerer(globals: Globals) {
       thn: Spanned[BlockExpr],
       els: Expr,
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     for {
       (condBlock, condOperand, _) <- lowerExpr(cond)
       (thenBlock, thenOperand, ty) <- lowerBlock(thn.item)
@@ -357,11 +364,11 @@ private class Lowerer(globals: Globals) {
       callee: Expr,
       args: IndexedSeq[Expr],
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     for {
       (block, operand, ty) <- lowerExpr(callee)
       result <- Result.build {
-        (errors: mutable.Builder[LowerError, IndexedSeq[LowerError]]) =>
+        (errors: mutable.Builder[LoweringError, IndexedSeq[LoweringError]]) =>
           val instrs = IndexedSeq.newBuilder[Instr]
           instrs ++= block
           val operands = IndexedSeq.newBuilder[Operand]
@@ -395,7 +402,7 @@ private class Lowerer(globals: Globals) {
       mutable: Boolean,
       expr: Expr,
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     for (block, operand, ty) <- lowerExpr(expr)
     yield {
       val (instrs, source) = asPlace(operand, ty)
@@ -415,7 +422,7 @@ private class Lowerer(globals: Globals) {
       lhs: Expr,
       rhs: Expr,
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     for {
       (lhsBlock, lhsOperand, _) <- lowerExpr(lhs)
       (rhsBlock, rhsOperand, _) <- lowerExpr(rhs)
@@ -440,7 +447,7 @@ private class Lowerer(globals: Globals) {
   private def lowerDeref(
       expr: Expr,
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     lowerExpr(expr).flatMap { case (block, operand, ty) =>
       (operand.item, ty.value.item) match {
         case (OperandKind.Place(place), TypeKind.Ref(_, _, rType)) =>
@@ -461,7 +468,7 @@ private class Lowerer(globals: Globals) {
       op: UnOp,
       expr: Expr,
       span: Span
-  ): Result[(Block, Operand, Type), LowerError] =
+  ): Result[(Block, Operand, Type), LoweringError] =
     for (block, operand, ty) <- lowerExpr(expr)
     yield {
       locals += Local(true, Spanned("unary_result", span), ty)
@@ -478,7 +485,7 @@ private class Lowerer(globals: Globals) {
       name: Name,
       origins: IndexedSeq[Option[Name]],
       span: Span
-  ): Result[(Operand, Type), LowerError] =
+  ): Result[(Operand, Type), LoweringError] =
     localIds(name.item) match {
       case Some(id) =>
         Result.Success(
@@ -497,7 +504,7 @@ private class Lowerer(globals: Globals) {
   /** Lowers a sequence of named origin arguments to origin ids. */
   private def lowerOriginArgs(
       args: IndexedSeq[Option[Name]]
-  ): Result[IndexedSeq[Option[OriginId]], LowerError] =
+  ): Result[IndexedSeq[Option[OriginId]], LoweringError] =
     Result.build { errors =>
       val ids = IndexedSeq.newBuilder[Option[OriginId]]
       for arg <- args do

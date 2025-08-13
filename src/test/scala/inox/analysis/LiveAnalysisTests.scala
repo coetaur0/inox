@@ -1,4 +1,4 @@
-package inox.borrowing
+package inox.analysis
 
 import org.scalatest.funsuite.AnyFunSuite
 import inox.Result
@@ -38,7 +38,7 @@ class LiveAnalysisTests extends AnyFunSuite:
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            assert(LiveAnalysis.liveFunction(ir("main")) == expected)
+            assert(LiveAnalysis(ir("main")) == expected)
           case Result.Failure(errors) =>
             assert(
               false,

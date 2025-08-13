@@ -1,4 +1,4 @@
-package inox.borrowing
+package inox.analysis
 
 import org.scalatest.funsuite.AnyFunSuite
 import inox.Result
@@ -236,7 +236,7 @@ class AliasAnalysisTests extends AnyFunSuite {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            assert(AliasAnalysis(ir).aliasFunction(ir("main"))._2 == expected)
+            assert(AliasAnalysis(ir, ir("main"))._2 == expected)
           case Result.Failure(errors) =>
             assert(
               false,
