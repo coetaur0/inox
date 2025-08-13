@@ -6,6 +6,7 @@ import inox.lowering.Lowerer
 import inox.parsing.Parser
 
 class AliasAnalysisTests extends AnyFunSuite {
+
   test("Alias analysis should be correctly computed") {
     check(
       """fn main() {
@@ -249,4 +250,5 @@ class AliasAnalysisTests extends AnyFunSuite {
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
     }
+
 }

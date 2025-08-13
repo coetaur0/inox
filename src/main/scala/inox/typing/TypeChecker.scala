@@ -22,6 +22,7 @@ object TypeChecker {
 
       ()
     }
+
 }
 
 /** A type checker for Inox. */
@@ -294,4 +295,5 @@ private class TypeChecker(module: inox.ir.Module) {
   ): Result[Unit, TypeError] =
     if !(value :< target) then Result.fail(IncompatibleTypes(value, target))
     else Result.Success(())
+
 }

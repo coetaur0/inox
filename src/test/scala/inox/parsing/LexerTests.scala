@@ -2,7 +2,8 @@ package inox.parsing
 
 import org.scalatest.funsuite.AnyFunSuite
 
-class LexerTests extends AnyFunSuite:
+class LexerTests extends AnyFunSuite {
+
   test("Comments should be ignored") {
     check("// This is a comment\n // And another one.", List((Token.Eof, "")))
   }
@@ -120,3 +121,5 @@ class LexerTests extends AnyFunSuite:
       )
     }
   }
+
+}

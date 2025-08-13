@@ -4,6 +4,7 @@ import inox.{Name, Span}
 
 /** A memory safety error. */
 enum MemoryError {
+
   case InvalidBorrow(span: Span)
   case UnauthorisedAssignment(name: Name)
   case UnauthorisedBorrow(span: Span)
@@ -23,4 +24,5 @@ enum MemoryError {
       case UninitializedVariable(name) =>
         s"${name.span}: Variable '${name.item} is used before it is initialized."
     }
+
 }

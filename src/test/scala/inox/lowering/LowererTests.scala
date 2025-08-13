@@ -5,7 +5,8 @@ import inox.{Location, Result, Span, Spanned}
 import inox.ir.Type
 import inox.parsing.Parser
 
-class LowererTests extends AnyFunSuite:
+class LowererTests extends AnyFunSuite {
+
   test("Function declarations should be lowered properly") {
     checkOk("fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }")
     checkOk(
@@ -146,3 +147,5 @@ class LowererTests extends AnyFunSuite:
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
     }
+
+}

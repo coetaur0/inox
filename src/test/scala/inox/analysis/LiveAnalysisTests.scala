@@ -5,7 +5,8 @@ import inox.Result
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 
-class LiveAnalysisTests extends AnyFunSuite:
+class LiveAnalysisTests extends AnyFunSuite {
+
   test("Live variables should be correctly computed") {
     check(
       "fn main() -> bool { let cond = true; let mut x: bool; while cond { cond = false; x = cond; }; x }",
@@ -51,3 +52,5 @@ class LiveAnalysisTests extends AnyFunSuite:
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
     }
+
+}

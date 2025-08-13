@@ -5,6 +5,7 @@ import inox.ir.Type
 
 /** An AST to IR lowering error. */
 enum LoweringError {
+
   case DuplicateOrigin(name: Name)
   case DuplicateParameter(name: Name)
   case InvalidCallee(ty: Type)
@@ -33,4 +34,5 @@ enum LoweringError {
       case UndefinedType(name) =>
         s"${name.span}: Cannot determine the type of '${name.item}' without an annotation or value."
     }
+
 }

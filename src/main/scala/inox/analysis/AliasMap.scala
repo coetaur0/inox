@@ -16,6 +16,7 @@ object AliasMap {
         case _                       => (false, Set())
       }
     })
+
 }
 
 /** A mapping binding local ids to the set of ids they may alias. */
@@ -70,4 +71,5 @@ class AliasMap(val bindings: IndexedSeq[(Boolean, AliasSet)]) {
     AliasMap(
       bindings.zip(that.bindings).map((lhs, rhs) => (lhs._1, lhs._2 | rhs._2))
     )
+
 }

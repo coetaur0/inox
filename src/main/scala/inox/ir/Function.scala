@@ -20,6 +20,7 @@ case class Function(
     )
     Type.Fn(params, result, span)
   }
+
 }
 
 /** A function parameter or local variable declaration. */

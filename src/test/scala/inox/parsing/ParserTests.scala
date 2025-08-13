@@ -3,7 +3,8 @@ package inox.parsing
 import org.scalatest.funsuite.AnyFunSuite
 import inox.{Location, Result, Span, Spanned}
 
-class ParserTests extends AnyFunSuite:
+class ParserTests extends AnyFunSuite {
+
   test("Function declarations should be properly parsed") {
     checkOk(
       "fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }",
@@ -210,3 +211,5 @@ class ParserTests extends AnyFunSuite:
       case Result.Failure(errors) =>
         assert(errors == expected)
     }
+
+}

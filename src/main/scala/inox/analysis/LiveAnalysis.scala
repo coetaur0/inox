@@ -12,12 +12,12 @@ object LiveAnalysis {
 
   /** Computes the liveness information for a function. */
   def apply(function: inox.ir.Function): IndexedSeq[LiveSet] =
-    new LiveAnalysis(function.locals)(Set(0), function.body) :+ Set(0)
+    new LiveAnalysis()(Set(0), function.body) :+ Set(0)
+
 }
 
 /** Liveness analysis for Inox. */
-class LiveAnalysis(locals: IndexedSeq[Local])
-    extends Analysis[LiveSet](locals, false) {
+private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
 
   override def whileInstr(
       state: LiveSet,
@@ -98,4 +98,5 @@ class LiveAnalysis(locals: IndexedSeq[Local])
 
   override def returnInstr(state: LiveSet): IndexedSeq[LiveSet] =
     IndexedSeq(state + 0)
+
 }

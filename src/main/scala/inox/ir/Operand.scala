@@ -7,6 +7,7 @@ type Operand = Spanned[OperandKind]
 
 /** An instruction operand. */
 object Operand {
+
   def Place(place: PlaceKind, span: Span): Operand =
     Spanned(OperandKind.Place(place), span)
 
@@ -25,10 +26,12 @@ object Operand {
 
   def Unit(span: Span): Operand =
     Spanned(OperandKind.Unit, span)
+
 }
 
 /** An instruction operand's kind. */
 enum OperandKind {
+
   case Place(place: PlaceKind)
   case Fn(name: Name, origins: IndexedSeq[Option[OriginId]])
   case I32(value: Int)
@@ -42,4 +45,5 @@ enum OperandKind {
       case Place(place)                       => Set(place.local)
       case Fn(_, _) | I32(_) | Bool(_) | Unit => Set.empty
     }
+
 }

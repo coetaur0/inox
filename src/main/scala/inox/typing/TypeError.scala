@@ -5,6 +5,7 @@ import inox.ir.{Type, TypeKind}
 
 /** A type error. */
 enum TypeError {
+
   case IncompatibleTypes(found: Type, expected: Type)
   case InvalidArgNum(found: Spanned[Int], expected: Int)
   case InvalidArgType(found: Type, expected: Type)
@@ -36,4 +37,5 @@ enum TypeError {
       case TypeError.OriginNeeded(span) =>
         s"$span All references in function parameters and return types must be annotated with origins."
     }
+
 }

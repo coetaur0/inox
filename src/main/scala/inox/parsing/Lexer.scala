@@ -4,6 +4,7 @@ import inox.{Location, Span, Spanned}
 
 /** A lexical analyser for Inox. */
 class Lexer(source: String) {
+
   private var line = 1
   private var column = 1
   private var offset = 0
@@ -126,4 +127,5 @@ class Lexer(source: String) {
     while offset < source.length && predicate(source(offset)) do advance()
     source.substring(start, offset)
   }
+
 }

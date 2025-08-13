@@ -133,7 +133,7 @@ object AliasAnalysis {
 
 /** Alias analysis for Inox. */
 private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
-    extends Analysis[AliasMap](locals) {
+    extends ForwardAnalysis[AliasMap] {
 
   override def whileInstr(
       state: AliasMap,
@@ -254,4 +254,5 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
         }
       case PlaceKind.Var(id) => locals(id).ty
     }
+
 }

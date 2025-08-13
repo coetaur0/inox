@@ -32,10 +32,12 @@ object Parser {
     */
   def parseTypeExpr(source: String): Result[TypeExpr, ParseError] =
     Parser(source).parseTypeExpr()
+
 }
 
 /** A parser for Inox. */
 private class Parser(source: String) {
+
   private val lexer = Lexer(source)
   private var token = lexer.next()
 
@@ -549,4 +551,5 @@ private class Parser(source: String) {
       source.substring(token.span.start.offset, token.span.end.offset),
       token.span
     )
+
 }

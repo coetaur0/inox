@@ -28,6 +28,7 @@ private class SymbolTable[A] {
 
     /** Clears the scope's contents. */
     def clear(): Unit = bindings.clear()
+
   }
 
   private val scopes = mutable.Stack(Scope(false))
@@ -59,4 +60,5 @@ private class SymbolTable[A] {
     scopes.dropInPlace(scopes.length - 1)
     scopes.top.clear()
   }
+
 }

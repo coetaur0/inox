@@ -6,7 +6,8 @@ import inox.ir.Type
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 
-class TypeCheckerTests extends AnyFunSuite:
+class TypeCheckerTests extends AnyFunSuite {
+
   test("Function declarations should be type checked properly") {
     checkOk("fn f<'a>(r: &'a i32) -> i32 { *r } fn main() { f::<'_>(&42); }")
     checkOk(
@@ -193,3 +194,5 @@ class TypeCheckerTests extends AnyFunSuite:
           s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
         )
     }
+
+}

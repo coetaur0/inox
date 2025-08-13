@@ -4,6 +4,7 @@ import inox.{Name, Spanned}
 
 /** A syntax error. */
 enum ParseError {
+
   case DuplicateFunction(name: Name)
   case UnclosedDelimiter(
       open: String,
@@ -21,4 +22,5 @@ enum ParseError {
       case UnexpectedSymbol(expected, found) =>
         s"${found.span}: Unexpected symbol '${found.item}', expected $expected."
     }
+
 }

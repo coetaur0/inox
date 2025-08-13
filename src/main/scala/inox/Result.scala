@@ -18,10 +18,12 @@ object Result {
   /** Instantiates a new failure with a given error. */
   def fail[Item, Error](error: Error): Result[Item, Error] =
     Failure(IndexedSeq(error))
+
 }
 
 /** A compilation result. */
 enum Result[Item, Error] {
+
   case Success(item: Item)
   case Failure(errors: IndexedSeq[Error])
 
@@ -52,4 +54,5 @@ enum Result[Item, Error] {
       case Success(_)      => ()
       case Failure(errors) => f(errors)
     }
+
 }

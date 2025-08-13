@@ -115,10 +115,12 @@ object Lowerer {
         else Result.fail(UndefinedOrigin(name))
       case None => Result.Success(None)
     }
+
 }
 
 /** An AST to IR lowerer. */
 private class Lowerer(globals: Globals) {
+
   private var originIds = globals.head._2.origins
   private val localIds = SymbolTable[LocalId]()
   private val locals = mutable.IndexedBuffer[Local]()
@@ -525,4 +527,5 @@ private class Lowerer(globals: Globals) {
         val place = Place.Var(locals.length - 1, operand.span)
         (IndexedSeq(Instr.Assign(place, operand)), place)
     }
+
 }

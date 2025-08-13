@@ -1,33 +1,16 @@
 package inox.analysis
 
 import inox.ast.BinaryOp
-import inox.ir.{Block, Instr, Local, Operand, Place, UnOp}
+import inox.ir.{Block, Instr, Operand, Place, UnOp}
 
-/** An abstract analysis over Inox's IR. */
-abstract class Analysis[A](
-    locals: IndexedSeq[Local],
-    forward: Boolean = true
-) {
+/** An abstract analysis on Inox's IR. */
+trait Analysis[State] {
 
-  /** Applies the analysis over a block of instructions. */
-  def apply(state: A, block: Block): IndexedSeq[A] = {
-    var currentState = state
-    if forward then
-      block.foldLeft(IndexedSeq.empty) { (acc, instr) =>
-        val result = apply(currentState, instr)
-        currentState = result.lastOption.getOrElse(currentState)
-        acc ++ result
-      }
-    else
-      block.foldRight(IndexedSeq.empty) { (instr, acc) =>
-        val result = apply(currentState, instr)
-        currentState = result.headOption.getOrElse(currentState)
-        result ++ acc
-      }
-  }
+  /** Applies the analysis on a block of instructions. */
+  def apply(state: State, block: Block): IndexedSeq[State]
 
   /** Applies the analysis over an instruction. */
-  def apply(state: A, instr: Instr): IndexedSeq[A] =
+  def apply(state: State, instr: Instr): IndexedSeq[State] =
     instr match {
       case Instr.While(cond, body)          => whileInstr(state, cond, body)
       case Instr.If(cond, thn, els)         => ifInstr(state, cond, thn, els)
@@ -43,48 +26,86 @@ abstract class Analysis[A](
       case Instr.Return => returnInstr(state)
     }
 
-  /** Applies the analysis over a while instruction. */
-  def whileInstr(state: A, cond: Operand, body: Block): IndexedSeq[A]
+  /** Applies the analysis on a while instruction. */
+  def whileInstr(state: State, cond: Operand, body: Block): IndexedSeq[State]
 
-  /** Applies the analysis over an if instruction. */
-  def ifInstr(state: A, cond: Operand, thn: Block, els: Block): IndexedSeq[A]
+  /** Applies the analysis on an if instruction. */
+  def ifInstr(
+      state: State,
+      cond: Operand,
+      thn: Block,
+      els: Block
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over a call instruction. */
+  /** Applies the analysis on a call instruction. */
   def callInstr(
-      state: A,
+      state: State,
       target: Place,
       callee: Operand,
       args: IndexedSeq[Operand]
-  ): IndexedSeq[A]
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over a borrow instruction. */
+  /** Applies the analysis on a borrow instruction. */
   def borrowInstr(
-      state: A,
+      state: State,
       target: Place,
       mutable: Boolean,
       source: Place
-  ): IndexedSeq[A]
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over an assignment instruction. */
-  def assignInstr(state: A, target: Place, value: Operand): IndexedSeq[A]
+  /** Applies the analysis on an assignment instruction. */
+  def assignInstr(
+      state: State,
+      target: Place,
+      value: Operand
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over a binary instruction. */
+  /** Applies the analysis on a binary instruction. */
   def binaryInstr(
-      state: A,
+      state: State,
       target: Place,
       op: BinaryOp,
       lhs: Operand,
       rhs: Operand
-  ): IndexedSeq[A]
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over a unary instruction. */
+  /** Applies the analysis on a unary instruction. */
   def unaryInstr(
-      state: A,
+      state: State,
       target: Place,
       op: UnOp,
       operand: Operand
-  ): IndexedSeq[A]
+  ): IndexedSeq[State]
 
-  /** Applies the analysis over a return instruction. */
-  def returnInstr(state: A): IndexedSeq[A]
+  /** Applies the analysis on a return instruction. */
+  def returnInstr(state: State): IndexedSeq[State]
+
+}
+
+/** An abstract forward analysis on Inox's IR. */
+trait ForwardAnalysis[State] extends Analysis[State] {
+
+  def apply(state: State, block: Block): IndexedSeq[State] = {
+    var currentState = state
+    block.foldLeft(IndexedSeq.empty) { (acc, instr) =>
+      val result = apply(currentState, instr)
+      currentState = result.lastOption.getOrElse(currentState)
+      acc ++ result
+    }
+  }
+
+}
+
+/** An abstract backward analysis on Inox's IR. */
+trait BackwardAnalysis[State] extends Analysis[State] {
+
+  def apply(state: State, block: Block): IndexedSeq[State] = {
+    var currentState = state
+    block.foldRight(IndexedSeq.empty) { (instr, acc) =>
+      val result = apply(currentState, instr)
+      currentState = result.headOption.getOrElse(currentState)
+      result ++ acc
+    }
+  }
+
 }

@@ -7,6 +7,7 @@ type OriginId = Int
 
 /** An IR type. */
 case class Type(value: Spanned[TypeKind]) {
+
   import TypeKind.*
 
   /** Checks if two types are equivalent. */
@@ -61,10 +62,12 @@ case class Type(value: Spanned[TypeKind]) {
     }
 
   override def toString: String = this.value.toString
+
 }
 
 /** An IR type. */
 object Type {
+
   def Fn(params: IndexedSeq[Type], result: Type, span: Span): Type =
     Type(Spanned(TypeKind.Fn(params, result), span))
 
@@ -81,10 +84,12 @@ object Type {
   def Bool(span: Span): Type = Type(Spanned(TypeKind.Bool, span))
 
   def Unit(span: Span): Type = Type(Spanned(TypeKind.Unit, span))
+
 }
 
 /** An IR type's kind. */
 enum TypeKind {
+
   case Fn(params: IndexedSeq[Type], result: Type)
   case Ref(origin: Option[OriginId], mutable: Boolean, ty: Type)
   case I32
@@ -103,4 +108,5 @@ enum TypeKind {
       case Bool => "bool"
       case Unit => "()"
     }
+
 }

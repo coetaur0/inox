@@ -2,6 +2,7 @@ package inox.parsing
 
 /** A lexical token. */
 enum Token {
+
   // Keywords:
   case BoolKw
   case ElseKw
@@ -97,4 +98,5 @@ enum Token {
       case Eof         => "the end of file"
       case Unknown     => "an unknown token"
     }
+
 }

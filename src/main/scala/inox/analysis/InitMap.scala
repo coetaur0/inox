@@ -1,6 +1,6 @@
 package inox.analysis
 
-import inox.ir.LocalId
+import inox.ir.{Local, LocalId}
 
 /** The initialisation state of a variable. */
 enum InitState {
@@ -25,6 +25,25 @@ enum InitState {
       case (Uninitialized, Uninitialized) => Uninitialized
       case (_, _)                         => MaybeInitialized
     }
+
+}
+
+object InitMap {
+
+  /** Initialises an initialisation map from a sequence of local declarations,
+    * given a specific number of parameters and local variables.
+    */
+  def init(
+      locals: IndexedSeq[Local],
+      paramCount: Int,
+      localCount: Int
+  ): InitMap =
+    InitMap(locals.zipWithIndex.map { (local, index) =>
+      if index == 0 || (index > paramCount && index < localCount) then
+        InitState.Uninitialized
+      else InitState.Initialized
+    })
+
 }
 
 /** A mapping binding local ids to their initialisation state. */
@@ -32,8 +51,8 @@ class InitMap(val bindings: IndexedSeq[InitState]) {
 
   override def equals(that: Any): Boolean =
     that match {
-      case that: AliasMap => this.bindings == that.bindings
-      case _              => false
+      case that: InitMap => this.bindings == that.bindings
+      case _             => false
     }
 
   override def toString: String = {
@@ -69,4 +88,5 @@ class InitMap(val bindings: IndexedSeq[InitState]) {
   /** Returns the union of two initialisation maps. */
   def union(that: InitMap): InitMap =
     InitMap(bindings.zip(that.bindings).map((lhs, rhs) => lhs | rhs))
+
 }
