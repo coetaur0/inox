@@ -10,9 +10,9 @@ enum InitState {
 
   override def toString: String =
     this match {
-      case InitState.Initialized      => "initialized"
-      case InitState.MaybeInitialized => "maybe initialized"
-      case InitState.Uninitialized    => "uninitialized"
+      case Initialized      => "initialized"
+      case MaybeInitialized => "maybe initialized"
+      case Uninitialized    => "uninitialized"
     }
 
   /** Alias for `union`. */

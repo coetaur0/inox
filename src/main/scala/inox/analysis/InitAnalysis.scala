@@ -1,7 +1,7 @@
 package inox.analysis
 
 import inox.ast.BinaryOp
-import inox.ir.{Block, Local, Operand, Place, UnOp}
+import inox.ir.{Block, Local, Operand, Place, PlaceKind, UnOp}
 
 /** Initialisation analysis for Inox. */
 object InitAnalysis {
@@ -22,7 +22,7 @@ object InitAnalysis {
 
 }
 
-/** Initialisation analysis for Inox. */
+/** Initialisation analysis for an Inox function. */
 private class InitAnalysis(aliases: IndexedSeq[AliasMap])
     extends ForwardAnalysis[InitMap] {
 
@@ -35,7 +35,7 @@ private class InitAnalysis(aliases: IndexedSeq[AliasMap])
   ): IndexedSeq[InitMap] = {
     remaining = remaining.tail
     val states = apply(state, body)
-    states :+ states.lastOption.getOrElse(state)
+    states :+ (states.lastOption.getOrElse(state) | state)
   }
 
   override def ifInstr(
@@ -98,9 +98,12 @@ private class InitAnalysis(aliases: IndexedSeq[AliasMap])
   }
 
   private def initTarget(state: InitMap, target: Place): IndexedSeq[InitMap] = {
-    val ids = AliasAnalysis.placeAliases(remaining.head, target.item)
     remaining = remaining.tail
-    IndexedSeq(state.updated(ids, InitState.Initialized))
+    target.item match {
+      case PlaceKind.Deref(place) => IndexedSeq(state)
+      case PlaceKind.Var(id)      =>
+        IndexedSeq(state.updated(id, InitState.Initialized))
+    }
   }
 
 }

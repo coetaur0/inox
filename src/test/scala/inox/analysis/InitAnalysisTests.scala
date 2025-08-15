@@ -49,6 +49,21 @@ class InitAnalysisTests extends AnyFunSuite {
         )
       )
     )
+    check(
+      """fn main() {
+        |  let x: i32;
+        |  while true {
+        |    x = 42;
+        |  }
+        |}
+        |""".stripMargin,
+      IndexedSeq(
+        InitMap(IndexedSeq(Uninitialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized)),
+        InitMap(IndexedSeq(Uninitialized, MaybeInitialized)),
+        InitMap(IndexedSeq(Initialized, MaybeInitialized))
+      )
+    )
   }
 
   /** Checks that the result of initialisation analysis on the declaration in a

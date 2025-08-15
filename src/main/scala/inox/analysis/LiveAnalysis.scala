@@ -16,7 +16,7 @@ object LiveAnalysis {
 
 }
 
-/** Liveness analysis for Inox. */
+/** Liveness analysis for an Inox function. */
 private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
 
   override def whileInstr(

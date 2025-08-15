@@ -27,6 +27,17 @@ object AliasAnalysis {
     )
   }
 
+  /** Returns the set of local ids that an instruction operand may alias.
+    */
+  def operandAliases(aliases: AliasMap, operand: Operand): AliasSet =
+    operand.item match {
+      case OperandKind.Place(place) =>
+        placeAliases(aliases, place).foldLeft(Set.empty) { (result, id) =>
+          result | aliases(id)._2
+        }
+      case _ => Set.empty
+    }
+
   /** Returns the set of local ids that a place expression may alias. */
   def placeAliases(aliases: AliasMap, place: PlaceKind): AliasSet =
     place match {
@@ -35,17 +46,6 @@ object AliasAnalysis {
           result | aliases(id)._2
         }
       case PlaceKind.Var(id) => Set(id)
-    }
-
-  /** Returns the set of local ids that an instruction operand may alias.
-    */
-  private def operandAliases(aliases: AliasMap, operand: Operand): AliasSet =
-    operand.item match {
-      case OperandKind.Place(place) =>
-        placeAliases(aliases, place).foldLeft(Set.empty) { (result, id) =>
-          result | aliases(id)._2
-        }
-      case _ => Set.empty
     }
 
   /** Returns the set of local ids that the result of a call expression may
@@ -131,7 +131,7 @@ object AliasAnalysis {
 
 }
 
-/** Alias analysis for Inox. */
+/** Alias analysis for an Inox function. */
 private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
     extends ForwardAnalysis[AliasMap] {
 
