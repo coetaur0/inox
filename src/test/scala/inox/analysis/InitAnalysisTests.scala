@@ -20,8 +20,7 @@ class InitAnalysisTests extends AnyFunSuite {
       IndexedSeq(
         InitMap(IndexedSeq(Uninitialized, Uninitialized, Uninitialized)),
         InitMap(IndexedSeq(Uninitialized, Initialized, Uninitialized)),
-        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized)),
-        InitMap(IndexedSeq(Uninitialized, Uninitialized, Initialized)),
+        InitMap(IndexedSeq(Uninitialized, Uninitialized, Uninitialized)),
         InitMap(IndexedSeq(Uninitialized, MaybeInitialized, Initialized)),
         InitMap(IndexedSeq(Initialized, MaybeInitialized, Initialized))
       )
@@ -59,9 +58,43 @@ class InitAnalysisTests extends AnyFunSuite {
         |""".stripMargin,
       IndexedSeq(
         InitMap(IndexedSeq(Uninitialized, Uninitialized)),
-        InitMap(IndexedSeq(Uninitialized, Initialized)),
         InitMap(IndexedSeq(Uninitialized, MaybeInitialized)),
         InitMap(IndexedSeq(Initialized, MaybeInitialized))
+      )
+    )
+    check(
+      """fn main() {
+        |  let x: i32;
+        |  let y = 42;
+        |  if true {
+        |    x = y;
+        |  } else {
+        |    x = 10;
+        |  };
+        |  x;
+        |}""".stripMargin,
+      IndexedSeq(
+        InitMap(
+          IndexedSeq(Uninitialized, Uninitialized, Uninitialized, Uninitialized)
+        ),
+        InitMap(
+          IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)
+        ),
+        InitMap(
+          IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)
+        ),
+        InitMap(
+          IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)
+        ),
+        InitMap(
+          IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)
+        ),
+        InitMap(
+          IndexedSeq(Uninitialized, Initialized, Initialized, Initialized)
+        ),
+        InitMap(
+          IndexedSeq(Initialized, Initialized, Initialized, Initialized)
+        )
       )
     )
   }
@@ -74,8 +107,8 @@ class InitAnalysisTests extends AnyFunSuite {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
           case Result.Success(ir) =>
-            val (locals, aliases) = AliasAnalysis(ir, ir("main"))
-            assert(InitAnalysis(locals, aliases, ir("main")) == expected)
+            val (locals, _) = AliasAnalysis(ir, ir("main"))
+            assert(InitAnalysis(locals, ir("main")) == expected)
           case Result.Failure(errors) =>
             assert(
               false,

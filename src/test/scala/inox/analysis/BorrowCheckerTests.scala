@@ -10,6 +10,16 @@ class BorrowCheckerTests extends AnyFunSuite {
   test("Borrow checking should work correctly") {
     checkOk("fn f<'a>(r: &'a mut i32) { let x = &mut *r; }")
     checkOk("fn f<'a>(r: &'a mut i32) { let x = &mut *r; *x = 42; }")
+    checkOk("""fn main() {
+        |  let x: i32;
+        |  let y = 42;
+        |  if true {
+        |    x = y;
+        |  } else {
+        |    x = 10;
+        |  };
+        |  x;
+        |}""".stripMargin)
 
     checkError(
       """fn main() {
@@ -84,19 +94,19 @@ class BorrowCheckerTests extends AnyFunSuite {
               case Result.Failure(errors) =>
                 assert(
                   false,
-                  s"Unexpected borrow checking errors in the input string: ${errors.mkString("\n")}."
+                  s"Unexpected borrow checking errors in the input string: ${errors.mkString("\n")}"
                 )
             }
           case Result.Failure(errors) =>
             assert(
               false,
-              s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
+              s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}"
             )
         }
       case Result.Failure(errors) =>
         assert(
           false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
+          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}"
         )
     }
 
@@ -122,13 +132,13 @@ class BorrowCheckerTests extends AnyFunSuite {
           case Result.Failure(errors) =>
             assert(
               false,
-              s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
+              s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}"
             )
         }
       case Result.Failure(errors) =>
         assert(
           false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
+          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}"
         )
     }
 

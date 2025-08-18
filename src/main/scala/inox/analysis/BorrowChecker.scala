@@ -1,9 +1,8 @@
 package inox.analysis
 
+import scala.collection.mutable
 import inox.{Result, Spanned}
 import inox.ir.{Block, Instr, Local, Operand, Place, PlaceKind, UnOp}
-
-import scala.collection.mutable
 
 /** A borrow checker for Inox. */
 object BorrowChecker {
@@ -24,7 +23,7 @@ object BorrowChecker {
   ): Result[Unit, BorrowError] = {
     val live = LiveAnalysis(function).tail
     val (locals, aliases) = AliasAnalysis(module, function)
-    val init = InitAnalysis(locals, aliases, function)
+    val init = InitAnalysis(locals, function)
     new BorrowChecker(locals, function.locals.length, live, aliases, init)
       .checkBlock(function.body)
   }

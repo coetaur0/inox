@@ -23,7 +23,7 @@ object AliasAnalysis {
 
     (
       locals,
-      new AliasAnalysis(module, locals)(aliases, function.body).+:(aliases)
+      new AliasAnalysis(module, locals)(IndexedSeq(aliases), function.body)
     )
   }
 
@@ -136,40 +136,41 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
     extends ForwardAnalysis[AliasMap] {
 
   override def whileInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       cond: Operand,
       body: Block
   ): IndexedSeq[AliasMap] = {
     @tailrec
     def fixpoint(state: AliasMap): IndexedSeq[AliasMap] = {
-      val states = apply(state, body)
-      val nextState = states.lastOption.getOrElse(state) | state
-      if nextState == state then states :+ nextState
+      val states = apply(IndexedSeq(state), body)
+      val nextState = states.last | state
+      if nextState == state then states.tail :+ nextState
       else fixpoint(nextState)
     }
 
-    fixpoint(state)
+    states :++ fixpoint(states.last)
   }
 
   override def ifInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       cond: Operand,
       thn: Block,
       els: Block
   ): IndexedSeq[AliasMap] = {
-    val thnStates = apply(state, thn)
-    val elsStates = apply(state, els)
-    val join = thnStates.lastOption.getOrElse(state)
-      | elsStates.lastOption.getOrElse(state)
-    thnStates :++ elsStates :+ join
+    val state = states.last
+    val thnStates = apply(IndexedSeq(state), thn)
+    val elsStates = apply(IndexedSeq(state), els)
+    val join = thnStates.last | elsStates.last
+    states :++ thnStates.tail :++ elsStates.tail :+ join
   }
 
   override def callInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       target: Place,
       callee: Operand,
       args: IndexedSeq[Operand]
-  ): IndexedSeq[AliasMap] =
+  ): IndexedSeq[AliasMap] = {
+    val state = states.last
     operandType(callee).value.item match {
       case TypeKind.Fn(params, result) =>
         val aliasSet: AliasSet =
@@ -177,61 +178,64 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
             aliases | AliasAnalysis
               .resultAliases(state, arg._1, result, arg._2)
           }
-        IndexedSeq(
-          state.updated(
-            AliasAnalysis.placeAliases(state, target.item),
-            aliasSet
-          )
+        states :+ state.updated(
+          AliasAnalysis.placeAliases(state, target.item),
+          aliasSet
         )
-      case _ => IndexedSeq(state) // Unreachable.
+      case _ => states :+ state // Unreachable.
     }
+  }
 
   override def borrowInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       target: Place,
       mutable: Boolean,
       source: Place
   ): IndexedSeq[AliasMap] = {
+    val state = states.last
     val aliasSet: AliasSet =
       AliasAnalysis.placeAliases(state, source.item).foldLeft(Set.empty) {
         (result, id) => result + id
       }
-    IndexedSeq(
-      state.updated(AliasAnalysis.placeAliases(state, target.item), aliasSet)
+    states :+ state.updated(
+      AliasAnalysis.placeAliases(state, target.item),
+      aliasSet
     )
   }
 
   override def assignInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       target: Place,
       value: Operand
-  ): IndexedSeq[AliasMap] =
-    IndexedSeq(
-      state.updated(
-        AliasAnalysis.placeAliases(state, target.item),
-        AliasAnalysis.operandAliases(state, value)
-      )
+  ): IndexedSeq[AliasMap] = {
+    val state = states.last
+    states :+ state.updated(
+      AliasAnalysis.placeAliases(state, target.item),
+      AliasAnalysis.operandAliases(state, value)
     )
+  }
 
   override def binaryInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       target: Place,
       op: BinaryOp,
       lhs: Operand,
       rhs: Operand
   ): IndexedSeq[AliasMap] =
-    IndexedSeq(state)
+    states :+ states.last
 
   override def unaryInstr(
-      state: AliasMap,
+      states: IndexedSeq[AliasMap],
       target: Place,
       op: UnOp,
       operand: Operand
   ): IndexedSeq[AliasMap] =
-    IndexedSeq(state)
+    states :+ states.last
 
-  override def returnInstr(state: AliasMap): IndexedSeq[AliasMap] =
-    IndexedSeq(state)
+  override def returnInstr(
+      states: IndexedSeq[AliasMap]
+  ): IndexedSeq[AliasMap] =
+    states :+ states.last
 
   /** Returns the type of an instruction operand. */
   private def operandType(operand: Operand): Type =

@@ -18,7 +18,7 @@ class LiveAnalysisTests extends AnyFunSuite {
       IndexedSeq(
         Set.empty,
         Set(1),
-        Set(1, 2),
+        Set(2, 1),
         Set.empty,
         Set.empty,
         Set(3),
