@@ -1,10 +1,11 @@
 package inox.parsing
 
+import inox.ast.*
+import inox.parsing.ParseError.*
+import inox.{Name, Result, Span, Spanned}
+
 import scala.collection.mutable
 import scala.util.control.Breaks
-import inox.{Name, Result, Span, Spanned}
-import inox.ast.*
-import ParseError.*
 
 /** A parser for Inox. */
 object Parser {

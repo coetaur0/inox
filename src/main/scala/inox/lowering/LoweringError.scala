@@ -1,7 +1,7 @@
 package inox.lowering
 
-import inox.{Name, Span}
 import inox.ir.Type
+import inox.{Name, Span}
 
 /** An AST to IR lowering error. */
 enum LoweringError {

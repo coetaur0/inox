@@ -1,11 +1,12 @@
 package inox.typing
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import inox.{Result, Spanned, ir}
 import inox.ast.BinaryOp
 import inox.ir.*
-import TypeError.*
+import inox.typing.TypeError.*
+import inox.{Result, Spanned, ir}
+
+import scala.annotation.tailrec
+import scala.collection.mutable
 
 /** A type checker for Inox. */
 object TypeChecker {

@@ -1,7 +1,7 @@
 package inox.typing
 
-import inox.{Name, Span, Spanned}
 import inox.ir.{Type, TypeKind}
+import inox.{Name, Span, Spanned}
 
 /** A type error. */
 enum TypeError {

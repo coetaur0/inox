@@ -1,7 +1,7 @@
 package inox.analysis
 
 import inox.ast.BinaryOp
-import inox.ir.{Block, Instr, Operand, Place, UnOp}
+import inox.ir.*
 
 /** An abstract analysis on Inox's IR. */
 trait Analysis[State] {

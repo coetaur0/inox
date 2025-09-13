@@ -1,9 +1,10 @@
 package inox.analysis
 
-import scala.annotation.tailrec
-import inox.{Name, Spanned}
 import inox.ast.BinaryOp
 import inox.ir.*
+import inox.{Name, Spanned}
+
+import scala.annotation.tailrec
 
 /** Alias analysis for Inox. */
 object AliasAnalysis {

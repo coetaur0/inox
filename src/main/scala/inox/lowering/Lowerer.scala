@@ -1,10 +1,11 @@
 package inox.lowering
 
-import scala.collection.mutable
-import inox.{Name, Result, Span, Spanned, ast}
+import inox.*
 import inox.ast.*
 import inox.ir.*
-import LoweringError.*
+import inox.lowering.LoweringError.*
+
+import scala.collection.mutable
 
 /** A mapping from function names to their declared origins and type. */
 private type Globals = Map[String, (origins: OriginIds, ty: Type)]

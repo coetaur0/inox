@@ -1,7 +1,7 @@
 package inox.analysis
 
 import inox.ast.BinaryOp
-import inox.ir.{Block, Local, Operand, Place, PlaceKind, UnOp}
+import inox.ir.*
 
 /** Initialisation analysis for Inox. */
 object InitAnalysis {

@@ -1,8 +1,9 @@
 package inox.analysis
 
-import scala.annotation.tailrec
 import inox.ast.BinaryOp
-import inox.ir.{Block, Instr, Local, LocalId, Operand, Place, UnOp}
+import inox.ir.*
+
+import scala.annotation.tailrec
 
 /** A set of live variables. */
 type LiveSet = Set[LocalId]

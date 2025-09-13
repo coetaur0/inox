@@ -1,8 +1,9 @@
 package inox.analysis
 
-import scala.collection.mutable
+import inox.ir.*
 import inox.{Result, Spanned}
-import inox.ir.{Block, Instr, Local, Operand, Place, PlaceKind, UnOp}
+
+import scala.collection.mutable
 
 /** A borrow checker for Inox. */
 object BorrowChecker {
