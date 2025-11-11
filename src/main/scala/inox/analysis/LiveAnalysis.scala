@@ -14,12 +14,10 @@ object LiveAnalysis {
   /** Computes the liveness information for a function. */
   def apply(function: inox.ir.Function): IndexedSeq[LiveSet] =
     new LiveAnalysis()(IndexedSeq(Set(0)), function.body)
-
 }
 
 /** Liveness analysis for an Inox function. */
 private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
-
   override def whileInstr(
       states: IndexedSeq[LiveSet],
       cond: Operand,
@@ -29,10 +27,13 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
 
     @tailrec
     def fixpoint(state: LiveSet): IndexedSeq[LiveSet] = {
-      val states = apply(IndexedSeq(state), body)
+      val states    = apply(IndexedSeq(state), body)
       val nextState = condLive | state | states.head
-      if nextState == state then states.init.prepended(nextState)
-      else fixpoint(nextState)
+      if (nextState == state) {
+        states.init.prepended(nextState)
+      } else {
+        fixpoint(nextState)
+      }
     }
 
     fixpoint(states.head) :++ states
@@ -46,10 +47,8 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
   ): IndexedSeq[LiveSet] = {
     val thnStates = apply(IndexedSeq(states.head), thn)
     val elsStates = apply(IndexedSeq(states.head), els)
-    val join = thnStates.head | elsStates.head
-    IndexedSeq(
-      cond.item.locals | join
-    ) :++ thnStates.init :++ elsStates.init :++ states
+    val join      = thnStates.head | elsStates.head
+    IndexedSeq(cond.item.locals | join) :++ thnStates.init :++ elsStates.init :++ states
   }
 
   override def callInstr(
@@ -57,30 +56,24 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
       target: Place,
       callee: Operand,
       args: IndexedSeq[Operand]
-  ): IndexedSeq[LiveSet] =
-    states.prepended(
-      states.head -
-        target.item.local |
-        callee.item.locals |
-        args.foldLeft(Set.empty) { (live, operand) =>
-          live | operand.item.locals
-        }
-    )
+  ): IndexedSeq[LiveSet] = states.prepended(
+    states.head - target.item.local | callee.item.locals | args.foldLeft(Set.empty) {
+      (live, operand) => live | operand.item.locals
+    }
+  )
 
   override def borrowInstr(
       states: IndexedSeq[LiveSet],
       target: Place,
       mutable: Boolean,
       source: Place
-  ): IndexedSeq[LiveSet] =
-    states.prepended(states.head - target.item.local + source.item.local)
+  ): IndexedSeq[LiveSet] = states.prepended(states.head - target.item.local + source.item.local)
 
   override def assignInstr(
       states: IndexedSeq[LiveSet],
       target: Place,
       value: Operand
-  ): IndexedSeq[LiveSet] =
-    states.prepended(states.head - target.item.local | value.item.locals)
+  ): IndexedSeq[LiveSet] = states.prepended(states.head - target.item.local | value.item.locals)
 
   override def binaryInstr(
       states: IndexedSeq[LiveSet],
@@ -89,19 +82,15 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
       lhs: Operand,
       rhs: Operand
   ): IndexedSeq[LiveSet] =
-    states.prepended(
-      states.head - target.item.local | lhs.item.locals | rhs.item.locals
-    )
+    states.prepended(states.head - target.item.local | lhs.item.locals | rhs.item.locals)
 
   override def unaryInstr(
       states: IndexedSeq[LiveSet],
       target: Place,
       op: UnOp,
       operand: Operand
-  ): IndexedSeq[LiveSet] =
-    states.prepended(states.head - target.item.local | operand.item.locals)
+  ): IndexedSeq[LiveSet] = states.prepended(states.head - target.item.local | operand.item.locals)
 
   override def returnInstr(states: IndexedSeq[LiveSet]): IndexedSeq[LiveSet] =
     states.prepended(states.head + 0)
-
 }

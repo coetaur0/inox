@@ -1,12 +1,11 @@
 package inox.lowering
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.{Location, Result, Span, Spanned}
 import inox.ir.Type
 import inox.parsing.Parser
+import inox.util.{Location, Result, Span, Spanned}
 
 class LowererTests extends AnyFunSuite {
-
   test("Function declarations should be lowered properly") {
     checkOk("fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }")
     checkOk(
@@ -15,15 +14,13 @@ class LowererTests extends AnyFunSuite {
 
     checkError(
       "fn f<'a, 'a>() {}",
-      IndexedSeq(
-        LoweringError.DuplicateOrigin(
-          Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11)))
-        )
+      Seq(
+        LoweringError.DuplicateOrigin(Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11))))
       )
     )
     checkError(
       "fn f(x: i32, x: i32) {}",
-      IndexedSeq(
+      Seq(
         LoweringError.DuplicateParameter(
           Spanned("x", Span(Location(1, 14, 13), Location(1, 15, 14)))
         )
@@ -37,18 +34,14 @@ class LowererTests extends AnyFunSuite {
 
     checkError(
       "fn main() { let x; }",
-      IndexedSeq(
-        LoweringError.UndefinedType(
-          Spanned("x", Span(Location(1, 17, 16), Location(1, 18, 17)))
-        )
+      Seq(
+        LoweringError.UndefinedType(Spanned("x", Span(Location(1, 17, 16), Location(1, 18, 17))))
       )
     )
     checkError(
       "fn main() { 3 = 4; }",
-      IndexedSeq(
-        LoweringError.UnassignableExpr(
-          Span(Location(1, 13, 12), Location(1, 14, 13))
-        )
+      Seq(
+        LoweringError.UnassignableExpr(Span(Location(1, 13, 12), Location(1, 14, 13)))
       )
     )
   }
@@ -63,34 +56,26 @@ class LowererTests extends AnyFunSuite {
 
     checkError(
       "fn main() { 3(); }",
-      IndexedSeq(
-        LoweringError.InvalidCallee(
-          Type.I32(Span(Location(1, 13, 12), Location(1, 14, 13)))
-        )
+      Seq(
+        LoweringError.InvalidCallee(Type.I32(Span(Location(1, 13, 12), Location(1, 14, 13))))
       )
     )
     checkError(
       "fn main() { *true; }",
-      IndexedSeq(
-        LoweringError.InvalidDeref(
-          Type.Bool(Span(Location(1, 14, 13), Location(1, 18, 17)))
-        )
+      Seq(
+        LoweringError.InvalidDeref(Type.Bool(Span(Location(1, 14, 13), Location(1, 18, 17))))
       )
     )
     checkError(
       "fn main() { x; }",
-      IndexedSeq(
-        LoweringError.UndefinedName(
-          Spanned("x", Span(Location(1, 13, 12), Location(1, 14, 13)))
-        )
+      Seq(
+        LoweringError.UndefinedName(Spanned("x", Span(Location(1, 13, 12), Location(1, 14, 13))))
       )
     )
     checkError(
       "fn f<'a>() {} fn main() { f::<'b>; }",
-      IndexedSeq(
-        LoweringError.UndefinedOrigin(
-          Spanned("'b", Span(Location(1, 31, 30), Location(1, 33, 32)))
-        )
+      Seq(
+        LoweringError.UndefinedOrigin(Spanned("'b", Span(Location(1, 31, 30), Location(1, 33, 32))))
       )
     )
   }
@@ -102,50 +87,37 @@ class LowererTests extends AnyFunSuite {
 
     checkError(
       "fn f(x: &'a i32) {}",
-      IndexedSeq(
-        LoweringError.UndefinedOrigin(
-          Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11)))
-        )
+      Seq(
+        LoweringError.UndefinedOrigin(Spanned("'a", Span(Location(1, 10, 9), Location(1, 12, 11))))
       )
     )
   }
 
   /** Checks that lowering the declarations in a source string succeeds. */
-  private def checkOk(source: String): Unit =
-    Parser.parseModule(source) match
-      case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match
-          case Result.Success(ir)     => assert(true)
-          case Result.Failure(errors) =>
-            assert(
-              false,
-              s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
-            )
-      case Result.Failure(errors) =>
-        assert(
-          false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
-        )
+  private def checkOk(source: String): Unit = Parser.parseModule(source) match {
+    case Result.Success(ast) =>
+      Lowerer.lowerModule(ast) match
+        case Result.Success(ir)     => assert(true)
+        case Result.Failure(errors) =>
+          assert(
+            false,
+            s"Unexpected lowering errors in the input string: ${errors.mkString("\n")}."
+          )
+    case Result.Failure(errors) =>
+      assert(false, s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}.")
+  }
 
-  /** Checks that lowering the declarations in a source string returns an
-    * `expected` sequence of lowering errors.
+  /** Checks that lowering the declarations in a source string returns an `expected` sequence of
+    * lowering errors.
     */
-  private def checkError(
-      source: String,
-      expected: IndexedSeq[LoweringError]
-  ): Unit =
+  private def checkError(source: String, expected: Seq[LoweringError]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
-          case Result.Success(ir) =>
-            assert(false, "Expected lowering errors in the input string.")
+          case Result.Success(ir) => assert(false, "Expected lowering errors in the input string.")
           case Result.Failure(errors) => assert(errors == expected)
         }
       case Result.Failure(errors) =>
-        assert(
-          false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
-        )
+        assert(false, s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}.")
     }
-
 }

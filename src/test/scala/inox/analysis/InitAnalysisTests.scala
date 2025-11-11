@@ -1,12 +1,11 @@
 package inox.analysis
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.Result
 import inox.lowering.Lowerer
 import inox.parsing.Parser
+import inox.util.Result
 
 class InitAnalysisTests extends AnyFunSuite {
-
   import InitState.*
 
   test("Initialisation analysis should be correctly computed") {
@@ -34,18 +33,10 @@ class InitAnalysisTests extends AnyFunSuite {
         |}
         |""".stripMargin,
       IndexedSeq(
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Uninitialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Initialized, Initialized)
-        ),
-        InitMap(
-          IndexedSeq(Initialized, Initialized, Initialized, Initialized)
-        )
+        InitMap(IndexedSeq(Uninitialized, Initialized, Uninitialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized, Initialized)),
+        InitMap(IndexedSeq(Initialized, Initialized, Initialized, Initialized))
       )
     )
     check(
@@ -74,41 +65,28 @@ class InitAnalysisTests extends AnyFunSuite {
         |  x;
         |}""".stripMargin,
       IndexedSeq(
-        InitMap(
-          IndexedSeq(Uninitialized, Uninitialized, Uninitialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)
-        ),
-        InitMap(
-          IndexedSeq(Uninitialized, Initialized, Initialized, Initialized)
-        ),
-        InitMap(
-          IndexedSeq(Initialized, Initialized, Initialized, Initialized)
-        )
+        InitMap(IndexedSeq(Uninitialized, Uninitialized, Uninitialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Uninitialized, Initialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized, Uninitialized)),
+        InitMap(IndexedSeq(Uninitialized, Initialized, Initialized, Initialized)),
+        InitMap(IndexedSeq(Initialized, Initialized, Initialized, Initialized))
       )
     )
   }
 
-  /** Checks that the result of initialisation analysis on the declaration in a
-    * source string returns an `expected` sequence of initialisation maps.
+  /** Checks that the result of initialisation analysis on the declaration in a source string
+    * returns an `expected` sequence of initialisation maps.
     */
   private def check(source: String, expected: IndexedSeq[InitMap]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
-          case Result.Success(ir) =>
+          case Result.Success(ir) => {
             val (locals, _) = AliasAnalysis(ir, ir("main"))
             assert(InitAnalysis(locals, ir("main")) == expected)
+          }
           case Result.Failure(errors) =>
             assert(
               false,
@@ -116,10 +94,6 @@ class InitAnalysisTests extends AnyFunSuite {
             )
         }
       case Result.Failure(errors) =>
-        assert(
-          false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
-        )
+        assert(false, s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}.")
     }
-
 }

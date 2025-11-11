@@ -1,12 +1,11 @@
 package inox.analysis
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.Result
 import inox.lowering.Lowerer
 import inox.parsing.Parser
+import inox.util.Result
 
 class LiveAnalysisTests extends AnyFunSuite {
-
   test("Live variables should be correctly computed") {
     check(
       "fn main() -> bool { let cond = true; let mut x: bool; while cond { cond = false; x = cond; }; x }",
@@ -31,15 +30,14 @@ class LiveAnalysisTests extends AnyFunSuite {
     )
   }
 
-  /** Checks that the result of liveness analysis on the declaration in a source
-    * string returns an `expected` sequence of local id sets.
+  /** Checks that the result of liveness analysis on the declaration in a source string returns an
+    * `expected` sequence of local id sets.
     */
   private def check(source: String, expected: IndexedSeq[LiveSet]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
-          case Result.Success(ir) =>
-            assert(LiveAnalysis(ir("main")) == expected)
+          case Result.Success(ir)     => assert(LiveAnalysis(ir("main")) == expected)
           case Result.Failure(errors) =>
             assert(
               false,
@@ -47,10 +45,6 @@ class LiveAnalysisTests extends AnyFunSuite {
             )
         }
       case Result.Failure(errors) =>
-        assert(
-          false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
-        )
+        assert(false, s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}.")
     }
-
 }

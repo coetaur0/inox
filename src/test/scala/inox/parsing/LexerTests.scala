@@ -3,7 +3,6 @@ package inox.parsing
 import org.scalatest.funsuite.AnyFunSuite
 
 class LexerTests extends AnyFunSuite {
-
   test("Comments should be ignored") {
     check("// This is a comment\n // And another one.", List((Token.Eof, "")))
   }
@@ -108,18 +107,15 @@ class LexerTests extends AnyFunSuite {
     )
   }
 
-  /** Checks that the tokens produced by the lexer for some source string match
-    * an expected list of tokens.
+  /** Checks that the tokens produced by the lexer for some source string match an expected list of
+    * tokens.
     */
   private def check(source: String, expected: Seq[(Token, String)]): Unit = {
     val lexer = new Lexer(source)
-    for (kind, text) <- expected do {
+    for { (kind, text) <- expected } {
       val next = lexer.next()
       assert(kind == next.item)
-      assert(
-        text == source.substring(next.span.start.offset, next.span.end.offset)
-      )
+      assert(text == source.substring(next.span.start.offset, next.span.end.offset))
     }
   }
-
 }

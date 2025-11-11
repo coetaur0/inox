@@ -7,26 +7,20 @@ import inox.ir.*
 object InitAnalysis {
 
   /** Applies initialisation analysis on a function declaration. */
-  def apply(
-      locals: IndexedSeq[Local],
-      function: inox.ir.Function
-  ): IndexedSeq[InitMap] = {
-    val initState =
-      InitMap.init(locals, function.paramCount, function.locals.length)
+  def apply(locals: IndexedSeq[Local], function: inox.ir.Function): IndexedSeq[InitMap] = {
+    val initState = InitMap.init(locals, function.paramCount, function.locals.length)
     new InitAnalysis()(IndexedSeq(initState), function.body)
   }
-
 }
 
 /** Initialisation analysis for an Inox function. */
 private class InitAnalysis extends ForwardAnalysis[InitMap] {
-
   override def whileInstr(
       states: IndexedSeq[InitMap],
       cond: Operand,
       body: Block
   ): IndexedSeq[InitMap] = {
-    val state = states.last
+    val state      = states.last
     val bodyStates = apply(IndexedSeq(state), body)
     states.init :++ bodyStates.init :+ (bodyStates.last | state)
   }
@@ -37,10 +31,10 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       thn: Block,
       els: Block
   ): IndexedSeq[InitMap] = {
-    val state = states.last
+    val state     = states.last
     val thnStates = apply(IndexedSeq(state), thn)
     val elsStates = apply(IndexedSeq(state), els)
-    val join = thnStates.last | elsStates.last
+    val join      = thnStates.last | elsStates.last
     states.init :++ thnStates.init :++ elsStates.init :+ join
   }
 
@@ -49,23 +43,20 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       target: Place,
       callee: Operand,
       args: IndexedSeq[Operand]
-  ): IndexedSeq[InitMap] =
-    initTarget(states, target)
+  ): IndexedSeq[InitMap] = initTarget(states, target)
 
   override def borrowInstr(
       states: IndexedSeq[InitMap],
       target: Place,
       mutable: Boolean,
       source: Place
-  ): IndexedSeq[InitMap] =
-    initTarget(states, target)
+  ): IndexedSeq[InitMap] = initTarget(states, target)
 
   override def assignInstr(
       states: IndexedSeq[InitMap],
       target: Place,
       value: Operand
-  ): IndexedSeq[InitMap] =
-    initTarget(states, target)
+  ): IndexedSeq[InitMap] = initTarget(states, target)
 
   override def binaryInstr(
       states: IndexedSeq[InitMap],
@@ -73,19 +64,16 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       op: BinaryOp,
       lhs: Operand,
       rhs: Operand
-  ): IndexedSeq[InitMap] =
-    initTarget(states, target)
+  ): IndexedSeq[InitMap] = initTarget(states, target)
 
   override def unaryInstr(
       states: IndexedSeq[InitMap],
       target: Place,
       op: UnOp,
       operand: Operand
-  ): IndexedSeq[InitMap] =
-    initTarget(states, target)
+  ): IndexedSeq[InitMap] = initTarget(states, target)
 
-  override def returnInstr(states: IndexedSeq[InitMap]): IndexedSeq[InitMap] =
-    states :+ states.last
+  override def returnInstr(states: IndexedSeq[InitMap]): IndexedSeq[InitMap] = states :+ states.last
 
   private def initTarget(
       states: IndexedSeq[InitMap],
@@ -97,5 +85,4 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       case PlaceKind.Var(id)      => state.updated(id, InitState.Initialized)
     })
   }
-
 }

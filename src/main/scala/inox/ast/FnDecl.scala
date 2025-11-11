@@ -1,6 +1,6 @@
 package inox.ast
 
-import inox.{Name, Span}
+import inox.util.{Name, Span}
 
 /** A function declaration. */
 case class FnDecl(
@@ -11,16 +11,11 @@ case class FnDecl(
 ) {
 
   /** The function's type. */
-  def ty: TypeExpr =
-    TypeExpr.Fn(
-      parameters.map(_.ty),
-      result,
-      Span(
-        parameters.headOption.map(_.ty).getOrElse(result).span.start,
-        result.span.end
-      )
-    )
-
+  def ty: TypeExpr = TypeExpr.Fn(
+    parameters.map(_.ty),
+    result,
+    Span(parameters.headOption.map(_.ty).getOrElse(result).span.start, result.span.end)
+  )
 }
 
 /** A function parameter. */

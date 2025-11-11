@@ -1,12 +1,11 @@
 package inox.analysis
 
 import org.scalatest.funsuite.AnyFunSuite
-import inox.Result
 import inox.lowering.Lowerer
 import inox.parsing.Parser
+import inox.util.Result
 
 class AliasAnalysisTests extends AnyFunSuite {
-
   test("Alias analysis should be correctly computed") {
     check(
       """fn main() {
@@ -229,15 +228,14 @@ class AliasAnalysisTests extends AnyFunSuite {
     )
   }
 
-  /** Checks that the result of alias analysis on the declaration in a source
-    * string returns an `expected` sequence of alias maps.
+  /** Checks that the result of alias analysis on the declaration in a source string returns an
+    * `expected` sequence of alias maps.
     */
   private def check(source: String, expected: IndexedSeq[AliasMap]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
         Lowerer.lowerModule(ast) match {
-          case Result.Success(ir) =>
-            assert(AliasAnalysis(ir, ir("main"))._2 == expected)
+          case Result.Success(ir)     => assert(AliasAnalysis(ir, ir("main"))._2 == expected)
           case Result.Failure(errors) =>
             assert(
               false,
@@ -245,10 +243,6 @@ class AliasAnalysisTests extends AnyFunSuite {
             )
         }
       case Result.Failure(errors) =>
-        assert(
-          false,
-          s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}."
-        )
+        assert(false, s"Unexpected syntax errors in the input string: ${errors.mkString("\n")}.")
     }
-
 }

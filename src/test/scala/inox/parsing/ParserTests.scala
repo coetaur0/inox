@@ -1,10 +1,9 @@
 package inox.parsing
 
+import inox.util.{Location, Result, Span, Spanned}
 import org.scalatest.funsuite.AnyFunSuite
-import inox.{Location, Result, Span, Spanned}
 
 class ParserTests extends AnyFunSuite {
-
   test("Function declarations should be properly parsed") {
     checkOk(
       "fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }",
@@ -14,16 +13,14 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "fn f() {} fn f() {}",
       Parser.parseModule,
-      IndexedSeq(
-        ParseError.DuplicateFunction(
-          Spanned("f", Span(Location(1, 14, 13), Location(1, 15, 14)))
-        )
+      Seq(
+        ParseError.DuplicateFunction(Spanned("f", Span(Location(1, 14, 13), Location(1, 15, 14))))
       )
     )
     checkError(
       "fn f() -> {}",
       Parser.parseModule,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a type expression",
           Spanned("{", Span(Location(1, 11, 10), Location(1, 12, 11)))
@@ -43,7 +40,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "while i32 {}",
       Parser.parseStmt,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "an expression",
           Spanned("i32", Span(Location(1, 7, 6), Location(1, 10, 9)))
@@ -53,7 +50,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "while true x",
       Parser.parseStmt,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a '{'",
           Spanned("x", Span(Location(1, 12, 11), Location(1, 13, 12)))
@@ -63,7 +60,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "let x: 10",
       Parser.parseStmt,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a type expression",
           Spanned("10", Span(Location(1, 8, 7), Location(1, 10, 9)))
@@ -73,7 +70,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "x =",
       Parser.parseStmt,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "an expression",
           Spanned("", Span(Location(1, 4, 3), Location(1, 4, 3)))
@@ -83,7 +80,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "return",
       Parser.parseStmt,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "an expression",
           Spanned("", Span(Location(1, 7, 6), Location(1, 7, 6)))
@@ -110,7 +107,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "(x + 1",
       Parser.parseExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnclosedDelimiter(
           "(",
           "a ')'",
@@ -121,7 +118,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "&i32",
       Parser.parseExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "an expression",
           Spanned("i32", Span(Location(1, 2, 1), Location(1, 5, 4)))
@@ -131,7 +128,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "x::",
       Parser.parseExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a '<'",
           Spanned("", Span(Location(1, 4, 3), Location(1, 4, 3)))
@@ -141,7 +138,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "x::<'a",
       Parser.parseExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnclosedDelimiter(
           "<",
           "a '>'",
@@ -160,7 +157,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "(i32",
       Parser.parseTypeExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnclosedDelimiter(
           "(",
           "a ')'",
@@ -171,7 +168,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "fn -> i32",
       Parser.parseTypeExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a '('",
           Spanned("->", Span(Location(1, 4, 3), Location(1, 6, 5)))
@@ -181,7 +178,7 @@ class ParserTests extends AnyFunSuite {
     checkError(
       "&true",
       Parser.parseTypeExpr,
-      IndexedSeq(
+      Seq(
         ParseError.UnexpectedSymbol(
           "a type expression",
           Spanned("true", Span(Location(1, 2, 1), Location(1, 6, 5)))
@@ -191,25 +188,16 @@ class ParserTests extends AnyFunSuite {
   }
 
   /** Checks that parsing some source string succeeds. */
-  private def checkOk[A](
-      source: String,
-      parse: String => Result[A, ParseError]
-  ): Unit =
+  private def checkOk[A](source: String, parse: String => Result[A, ParseError]): Unit =
     assert(parse(source).isSuccess)
 
-  /** Checks that parsing some source string returns an `expected` sequence of
-    * parse errors.
-    */
+  /** Checks that parsing some source string returns an `expected` sequence of parse errors. */
   private def checkError[A](
       source: String,
       parse: String => Result[A, ParseError],
-      expected: IndexedSeq[ParseError]
-  ): Unit =
-    parse(source) match {
-      case Result.Success(result) =>
-        assert(false, "Expected parse errors in the input string.")
-      case Result.Failure(errors) =>
-        assert(errors == expected)
-    }
-
+      expected: Seq[ParseError]
+  ): Unit = parse(source) match {
+    case Result.Success(result) => assert(false, "Expected parse errors in the input string.")
+    case Result.Failure(errors) => assert(errors == expected)
+  }
 }
