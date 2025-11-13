@@ -20,7 +20,7 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       cond: Operand,
       body: Block
   ): IndexedSeq[InitMap] = {
-    val state      = states.last
+    val state = states.last
     val bodyStates = apply(IndexedSeq(state), body)
     states.init :++ bodyStates.init :+ (bodyStates.last | state)
   }
@@ -31,10 +31,10 @@ private class InitAnalysis extends ForwardAnalysis[InitMap] {
       thn: Block,
       els: Block
   ): IndexedSeq[InitMap] = {
-    val state     = states.last
+    val state = states.last
     val thnStates = apply(IndexedSeq(state), thn)
     val elsStates = apply(IndexedSeq(state), els)
-    val join      = thnStates.last | elsStates.last
+    val join = thnStates.last | elsStates.last
     states.init :++ thnStates.init :++ elsStates.init :+ join
   }
 

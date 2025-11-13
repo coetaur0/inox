@@ -132,7 +132,7 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
   ): IndexedSeq[AliasMap] = {
     @tailrec
     def fixpoint(state: AliasMap): IndexedSeq[AliasMap] = {
-      val states    = apply(IndexedSeq(state), body)
+      val states = apply(IndexedSeq(state), body)
       val nextState = states.last | state
       if (nextState == state) {
         states.tail :+ nextState
@@ -149,10 +149,10 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
       thn: Block,
       els: Block
   ): IndexedSeq[AliasMap] = {
-    val state     = states.last
+    val state = states.last
     val thnStates = apply(IndexedSeq(state), thn)
     val elsStates = apply(IndexedSeq(state), els)
-    val join      = thnStates.last | elsStates.last
+    val join = thnStates.last | elsStates.last
     states :++ thnStates.tail :++ elsStates.tail :+ join
   }
 
@@ -184,7 +184,7 @@ private class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
       mutable: Boolean,
       source: Place
   ): IndexedSeq[AliasMap] = {
-    val state              = states.last
+    val state = states.last
     val aliasSet: AliasSet =
       AliasAnalysis.placeAliases(state, source.item).foldLeft(Set.empty) { (result, id) =>
         result + id

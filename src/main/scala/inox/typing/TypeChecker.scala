@@ -95,7 +95,7 @@ private class TypeChecker(module: inox.ir.Module) {
       args: IndexedSeq[Operand]
   ): Result[Unit, TypeError] = for {
     ty <- checkOperand(locals, callee)
-    _  <-
+    _ <-
       ty.value.item match {
         case TypeKind.Fn(params, result) =>
           if (args.length != params.length) {
@@ -134,7 +134,7 @@ private class TypeChecker(module: inox.ir.Module) {
   ): Result[Unit, TypeError] = for {
     targetType <- checkPlace(locals, target)
     sourceType <- checkPlace(locals, source)
-    _          <- {
+    _ <- {
       val ty = Type.Ref(None, mutable, sourceType, target.span)
       checkCompatibility(targetType, ty)
     }
@@ -149,8 +149,8 @@ private class TypeChecker(module: inox.ir.Module) {
       value: Operand
   ): Result[Unit, TypeError] = for {
     targetType <- checkPlace(locals, target)
-    valueType  <- checkOperand(locals, value)
-    _          <- checkCompatibility(targetType, valueType)
+    valueType <- checkOperand(locals, value)
+    _ <- checkCompatibility(targetType, valueType)
   } yield {
     ()
   }
@@ -164,9 +164,9 @@ private class TypeChecker(module: inox.ir.Module) {
       rhs: Operand
   ): Result[Unit, TypeError] = for {
     targetType <- checkPlace(locals, target)
-    lhsType    <- checkOperand(locals, lhs)
-    rhsType    <- checkOperand(locals, rhs)
-    _          <- op match {
+    lhsType <- checkOperand(locals, lhs)
+    rhsType <- checkOperand(locals, rhs)
+    _ <- op match {
       case BinaryOp.And | BinaryOp.Or =>
         if (lhsType.value.item != TypeKind.Bool) {
           Result.fail(InvalidOperand(lhsType, TypeKind.Bool))
@@ -196,9 +196,9 @@ private class TypeChecker(module: inox.ir.Module) {
       op: UnOp,
       operand: Operand
   ): Result[Unit, TypeError] = for {
-    targetType  <- checkPlace(locals, target)
+    targetType <- checkPlace(locals, target)
     operandType <- checkOperand(locals, operand)
-    _           <-
+    _ <-
       if (op == UnOp.Not && operandType.value.item != TypeKind.Bool) {
         Result.fail(InvalidOperand(operandType, TypeKind.Bool))
       } else if (op == UnOp.Neg && operandType.value.item != TypeKind.I32) {

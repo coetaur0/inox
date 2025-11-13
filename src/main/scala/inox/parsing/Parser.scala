@@ -85,12 +85,12 @@ private class Parser(source: String) {
         TypeExpr.Unit(token.span)
       )
     for {
-      _       <- consume(Token.FnKw)
-      name    <- consume(Token.Name)
+      _ <- consume(Token.FnKw)
+      name <- consume(Token.Name)
       origins <- parseOrigins()
-      params  <- parseParams()
-      result  <- parseResult()
-      body    <- parseBlock().map(_.item)
+      params <- parseParams()
+      result <- parseResult()
+      body <- parseBlock().map(_.item)
     } yield {
       (name, inox.ast.FnDecl(origins, params, result, body))
     }
@@ -99,9 +99,9 @@ private class Parser(source: String) {
   /** Parses a function parameter. */
   private def parseParameter(): Result[ParamDecl, ParseError] = for {
     mutable <- parseMut()
-    name    <- consume(Token.Name)
-    _       <- consume(Token.Colon)
-    ty      <- parseTypeExpr()
+    name <- consume(Token.Name)
+    _ <- consume(Token.Colon)
+    ty <- parseTypeExpr()
   } yield {
     ParamDecl(mutable, name, ty)
   }
@@ -110,7 +110,7 @@ private class Parser(source: String) {
   private def parseBlock(): Result[Spanned[BlockExpr], ParseError] = {
     val parseStmts = () =>
       Result.build { (errors: mutable.Builder[ParseError, Seq[ParseError]]) =>
-        val stmts                = IndexedSeq.newBuilder[Stmt]
+        val stmts = IndexedSeq.newBuilder[Stmt]
         var result: Option[Expr] = None
         Breaks.breakable(
           while (token.item != Token.Eof && token.item != Token.RBrace) {
@@ -140,9 +140,9 @@ private class Parser(source: String) {
         )
       }
     for {
-      open            <- consume(Token.LBrace).map(_.span.start)
+      open <- consume(Token.LBrace).map(_.span.start)
       (stmts, result) <- parseStmts()
-      close           <- close("{", Token.RBrace).map(_.end)
+      close <- close("{", Token.RBrace).map(_.end)
     } yield {
       Spanned(BlockExpr(stmts, result), Span(open, close))
     }
@@ -172,8 +172,8 @@ private class Parser(source: String) {
     val start = advance().span.start
     for {
       mutable <- parseMut()
-      name    <- consume(Token.Name)
-      ty      <- parseOptional(
+      name <- consume(Token.Name)
+      ty <- parseOptional(
         () =>
           advance()
           parseTypeExpr().map(t => Some(t))
@@ -227,7 +227,7 @@ private class Parser(source: String) {
 
   /** Parses an expression. */
   private def parseExpr(): Result[Expr, ParseError] = for {
-    lhs  <- parseUnary()
+    lhs <- parseUnary()
     expr <- parseBinary(0, lhs)
   } yield {
     expr
@@ -254,8 +254,8 @@ private class Parser(source: String) {
       advance()
       for {
         unary <- parseUnary()
-        rhs   <- parseBinary(nextPrec, unary)
-        expr  <- parseBinary(prec, Expr.Binary(op, lhs, rhs, Span(lhs.span.start, rhs.span.end)))
+        rhs <- parseBinary(nextPrec, unary)
+        expr <- parseBinary(prec, Expr.Binary(op, lhs, rhs, Span(lhs.span.start, rhs.span.end)))
       } yield {
         expr
       }
@@ -282,7 +282,7 @@ private class Parser(source: String) {
       case None =>
         for {
           callee <- parsePrimary()
-          call   <- parseCall(callee)
+          call <- parseCall(callee)
         } yield {
           call
         }
@@ -316,7 +316,7 @@ private class Parser(source: String) {
         Expr.Block(body.item, body.span)
       }
     case Token.IntLit => {
-      val span  = advance().span
+      val span = advance().span
       val value = source.substring(span.start.offset, span.end.offset).toInt
       Result.Success(Expr.IntLit(value, span))
     }
@@ -333,7 +333,7 @@ private class Parser(source: String) {
     } else {
       for {
         expr <- parseExpr()
-        _    <- close("(", Token.RParen)
+        _ <- close("(", Token.RParen)
       } yield {
         expr
       }
@@ -358,8 +358,8 @@ private class Parser(source: String) {
     val start = advance().span.start
     for {
       cond <- parseExpr()
-      thn  <- parseBlock()
-      els  <- elseExpr()
+      thn <- parseBlock()
+      els <- elseExpr()
     } yield {
       Expr.If(cond, thn, els, Span(start, els.span.end))
     }
@@ -370,7 +370,7 @@ private class Parser(source: String) {
     val start = advance().span.start
     for {
       mutable <- parseMut()
-      expr    <- parseExpr()
+      expr <- parseExpr()
     } yield {
       Expr.Borrow(mutable, expr, Span(start, expr.span.end))
     }
@@ -408,7 +408,7 @@ private class Parser(source: String) {
       }
 
     for {
-      name    <- consume(Token.Name)
+      name <- consume(Token.Name)
       origins <- parseOriginArgs(name.span)
     } yield {
       Expr.Var(name, origins.item, Span(name.span.start, origins.span.end))
@@ -433,7 +433,7 @@ private class Parser(source: String) {
     } else {
       for {
         ty <- parseTypeExpr()
-        _  <- close("(", Token.RParen)
+        _ <- close("(", Token.RParen)
       } yield {
         ty
       }
@@ -449,7 +449,7 @@ private class Parser(source: String) {
         Token.LParen,
         Token.RParen
       )
-      _      <- consume(Token.Arrow)
+      _ <- consume(Token.Arrow)
       result <- parseTypeExpr()
     } yield {
       TypeExpr.Fn(params.item, result, Span(start, result.span.end))
@@ -460,9 +460,9 @@ private class Parser(source: String) {
   private def parseRefType(): Result[TypeExpr, ParseError] = {
     val start = advance().span.start
     for {
-      origin  <- parseOrigin()
+      origin <- parseOrigin()
       mutable <- parseMut()
-      ty      <- parseTypeExpr()
+      ty <- parseTypeExpr()
     } yield {
       TypeExpr.Ref(origin, mutable, ty, Span(start, ty.span.end))
     }
@@ -488,8 +488,8 @@ private class Parser(source: String) {
       start: Token,
       end: Token
   ): Result[Spanned[A], ParseError] = for {
-    open  <- consume(start)
-    item  <- parse()
+    open <- consume(start)
+    item <- parse()
     close <- close(open.item, end)
   } yield {
     Spanned(item, Span(open.span.start, close.end))

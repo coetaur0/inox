@@ -4,7 +4,7 @@ import inox.util.{Location, Span, Spanned}
 
 /** A lexical analyser for Inox. */
 class Lexer(source: String) {
-  private var line   = 1
+  private var line = 1
   private var column = 1
   private var offset = 0
 
@@ -32,7 +32,7 @@ class Lexer(source: String) {
   /** Tokenises a keyword, a name or a boolean literal. */
   private def lexWord(): Spanned[Token] = {
     val start = location
-    val kind  = consume(c => c.isLetterOrDigit || c == '_') match {
+    val kind = consume(c => c.isLetterOrDigit || c == '_') match {
       case "bool"   => Token.BoolKw
       case "else"   => Token.ElseKw
       case "false"  => Token.FalseLit

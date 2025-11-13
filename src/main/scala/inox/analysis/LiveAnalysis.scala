@@ -27,7 +27,7 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
 
     @tailrec
     def fixpoint(state: LiveSet): IndexedSeq[LiveSet] = {
-      val states    = apply(IndexedSeq(state), body)
+      val states = apply(IndexedSeq(state), body)
       val nextState = condLive | state | states.head
       if (nextState == state) {
         states.init.prepended(nextState)
@@ -47,7 +47,7 @@ private class LiveAnalysis extends BackwardAnalysis[LiveSet] {
   ): IndexedSeq[LiveSet] = {
     val thnStates = apply(IndexedSeq(states.head), thn)
     val elsStates = apply(IndexedSeq(states.head), els)
-    val join      = thnStates.head | elsStates.head
+    val join = thnStates.head | elsStates.head
     IndexedSeq(cond.item.locals | join) :++ thnStates.init :++ elsStates.init :++ states
   }
 

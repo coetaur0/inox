@@ -8,7 +8,7 @@ object Result {
   /** Builds a new result depending on the effect of some function `f`. */
   def build[Item, Error](f: mutable.Builder[Error, Seq[Error]] => Item): Result[Item, Error] = {
     val errorBuilder = Seq.newBuilder[Error]
-    val item         = f(errorBuilder)
+    val item = f(errorBuilder)
     if (errorBuilder.result().isEmpty) {
       Success(item)
     } else {

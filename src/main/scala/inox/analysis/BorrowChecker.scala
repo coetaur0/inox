@@ -21,9 +21,9 @@ object BorrowChecker {
       module: inox.ir.Module,
       function: inox.ir.Function
   ): Result[Unit, BorrowError] = {
-    val live              = LiveAnalysis(function).tail
+    val live = LiveAnalysis(function).tail
     val (locals, aliases) = AliasAnalysis(module, function)
-    val init              = InitAnalysis(locals, function)
+    val init = InitAnalysis(locals, function)
     new BorrowChecker(locals, function.locals.length, live, aliases, init).checkBlock(function.body)
   }
 }
@@ -36,9 +36,9 @@ private class BorrowChecker(
     aliases: IndexedSeq[AliasMap],
     init: IndexedSeq[InitMap]
 ) {
-  private var remainingLive    = live
+  private var remainingLive = live
   private var remainingAliases = aliases
-  private var remainingInit    = init
+  private var remainingInit = init
 
   /** Borrow checks a block of instructions. */
   private def checkBlock(block: Block): Result[Unit, BorrowError] = if (block.isEmpty) {

@@ -20,7 +20,7 @@ object Lowerer {
   /** Lowers a module declaration to its IR representation. */
   def lowerModule(moduleDecl: ModuleDecl): Result[Module, LoweringError] = for {
     globals <- getGlobals(moduleDecl)
-    result  <- Lowerer(globals).lowerModule(moduleDecl)
+    result <- Lowerer(globals).lowerModule(moduleDecl)
   } yield {
     result
   }
@@ -64,7 +64,7 @@ object Lowerer {
       case Ref(origin, mut, rType) =>
         for {
           originId <- lowerOrigin(origins, origin)
-          t        <- lowerTypeExpr(origins, rType)
+          t <- lowerTypeExpr(origins, rType)
         } yield {
           Type.Ref(originId, mut, t, ty.span)
         }
@@ -115,8 +115,8 @@ object Lowerer {
 /** An AST to IR lowerer. */
 private class Lowerer(globals: Globals) {
   private var originIds = globals.head._2.origins
-  private val localIds  = SymbolTable[LocalId]()
-  private val locals    = mutable.IndexedBuffer[Local]()
+  private val localIds = SymbolTable[LocalId]()
+  private val locals = mutable.IndexedBuffer[Local]()
 
   /** Lowers a module declaration to its IR representation. */
   private def lowerModule(moduleDecl: ModuleDecl): Result[Module, LoweringError] = Result.build {
@@ -180,7 +180,7 @@ private class Lowerer(globals: Globals) {
   /** Lowers a while statement to its IR representation. */
   private def lowerWhile(cond: Expr, body: BlockExpr): Result[Block, LoweringError] = for {
     (condBlock, condOperand, _) <- lowerExpr(cond)
-    (bodyBlock, _, _)           <- lowerBlock(body)
+    (bodyBlock, _, _) <- lowerBlock(body)
   } yield {
     condBlock :+ Instr.While(condOperand, bodyBlock)
   }
@@ -195,7 +195,7 @@ private class Lowerer(globals: Globals) {
     (ty.map(t => Lowerer.lowerTypeExpr(originIds, t)), value.map(v => lowerExpr(v))) match {
       case (Some(t), Some(v)) =>
         for {
-          ty                  <- t
+          ty <- t
           (block, operand, _) <- v
         } yield {
           locals += Local(mutable, name, ty)
@@ -221,7 +221,7 @@ private class Lowerer(globals: Globals) {
   private def lowerAssignment(lhs: Expr, rhs: Expr): Result[Block, LoweringError] = for {
     (lhsBlock, lhsOperand, _) <- lowerExpr(lhs)
     (rhsBlock, rhsOperand, _) <- lowerExpr(rhs)
-    result                    <- lhsOperand.item match {
+    result <- lhsOperand.item match {
       case OperandKind.Place(place) =>
         Result.Success(
           (rhsBlock :++ lhsBlock) :+ Instr.Assign(Spanned(place, lhs.span), rhsOperand)
@@ -296,13 +296,13 @@ private class Lowerer(globals: Globals) {
       els: Expr,
       span: Span
   ): Result[(Block, Operand, Type), LoweringError] = for {
-    (condBlock, condOperand, _)  <- lowerExpr(cond)
+    (condBlock, condOperand, _) <- lowerExpr(cond)
     (thenBlock, thenOperand, ty) <- lowerBlock(thn.item)
-    (elseBlock, elseOperand, _)  <- lowerExpr(els)
+    (elseBlock, elseOperand, _) <- lowerExpr(els)
   } yield {
     locals += Local(true, Spanned("if_result", span), ty)
     val target = Place.Var(locals.length - 1, span)
-    val block  = condBlock :+ Instr.If(
+    val block = condBlock :+ Instr.If(
       condOperand,
       thenBlock :+ Instr.Assign(target, thenOperand),
       elseBlock :+ Instr.Assign(target, elseOperand)
@@ -355,7 +355,7 @@ private class Lowerer(globals: Globals) {
   ): Result[(Block, Operand, Type), LoweringError] =
     for { (block, operand, ty) <- lowerExpr(expr) } yield {
       val (instrs, source) = asPlace(operand, ty)
-      val targetType       = Type.Ref(None, mutable, ty, span)
+      val targetType = Type.Ref(None, mutable, ty, span)
       locals += Local(true, Spanned("borrow_result", span), targetType)
       val target = Place.Var(locals.length - 1, span)
       (
@@ -381,7 +381,7 @@ private class Lowerer(globals: Globals) {
         case _                                                         => Type.Bool(span)
       }
     locals += Local(true, Spanned("binary_result", span), ty)
-    val place    = Place.Var(locals.length - 1, span)
+    val place = Place.Var(locals.length - 1, span)
     val binInstr = Instr.Binary(place, op, lhsOperand, rhsOperand)
     ((lhsBlock :++ rhsBlock) :+ binInstr, Operand.Place(place.item, place.span), ty)
   }
