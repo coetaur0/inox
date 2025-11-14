@@ -1,10 +1,10 @@
 package inox.typing
 
 import inox.ir.{Type, TypeKind}
-import inox.util.{Name, Span, Spanned}
+import inox.util.{InoxError, Name, Span, Spanned}
 
 /** A type error. */
-enum TypeError {
+enum TypeError extends InoxError {
   case IncompatibleTypes(found: Type, expected: Type)
   case InvalidArgNum(found: Spanned[Int], expected: Int)
   case InvalidArgType(found: Type, expected: Type)

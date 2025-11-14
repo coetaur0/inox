@@ -1,9 +1,9 @@
 package inox.evaluation
 
-import inox.util.{Name, Span}
+import inox.util.{InoxError, Name, Span}
 
 /** An interpreter runtime error. */
-enum RuntimeError {
+enum RuntimeError extends InoxError {
   case UndefinedFunction(name: Name)
   case InvalidOperation(span: Span)
   case InvalidDereference(span: Span)

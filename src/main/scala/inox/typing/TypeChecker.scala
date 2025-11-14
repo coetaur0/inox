@@ -1,10 +1,10 @@
 package inox.typing
 
 import inox.ast.BinaryOp
+import inox.ir
 import inox.ir.*
 import inox.typing.TypeError.*
 import inox.util.{Result, Spanned}
-import inox.ir
 
 import scala.annotation.tailrec
 import scala.collection.mutable

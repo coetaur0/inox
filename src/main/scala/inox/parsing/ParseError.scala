@@ -1,9 +1,9 @@
 package inox.parsing
 
-import inox.util.{Name, Spanned}
+import inox.util.{InoxError, Name, Spanned}
 
 /** A syntax error. */
-enum ParseError {
+enum ParseError extends InoxError {
   case DuplicateFunction(name: Name)
   case UnclosedDelimiter(open: String, expected: String, found: Spanned[String])
   case UnexpectedSymbol(expected: String, found: Spanned[String])

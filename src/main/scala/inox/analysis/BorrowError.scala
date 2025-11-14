@@ -1,9 +1,9 @@
 package inox.analysis
 
-import inox.util.{Name, Span}
+import inox.util.{InoxError, Name, Span}
 
 /** A borrow checking error. */
-enum BorrowError {
+enum BorrowError extends InoxError {
   case InvalidReborrow(span: Span)
   case UnauthorisedAssignment(name: Name)
   case UnauthorisedBorrow(span: Span)

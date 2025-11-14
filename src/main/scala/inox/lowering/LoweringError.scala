@@ -1,10 +1,10 @@
 package inox.lowering
 
 import inox.ir.Type
-import inox.util.{Name, Span}
+import inox.util.{InoxError, Name, Span}
 
 /** An AST to IR lowering error. */
-enum LoweringError {
+enum LoweringError extends InoxError {
   case DuplicateOrigin(name: Name)
   case DuplicateParameter(name: Name)
   case InvalidCallee(ty: Type)

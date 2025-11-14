@@ -1,7 +1,7 @@
 package inox.evaluation
 
 import inox.ast.BinaryOp
-import inox.ir.{Block, Instr, Operand, OperandKind, Place, PlaceKind, UnOp}
+import inox.ir.*
 import inox.util.{Name, Result, Span}
 
 import scala.collection.mutable.ArrayBuffer
@@ -19,12 +19,12 @@ object Interpreter {
     case Uninitialised
 
     override def toString: String = this match {
-      case Value.Function(name) => s"Function ${name.item} at ${name.span}"
-      case Value.Address(index) => s"Address $index"
-      case Value.I32(value)     => s"I32 $value"
-      case Value.Bool(value)    => s"Bool $value"
-      case Value.Unit           => "Unit"
-      case Value.Uninitialised  => "Uninitialised"
+      case Value.Function(name) => s"Function ${name.item}"
+      case Value.Address(index) => s"&$index"
+      case Value.I32(value)     => s"$value"
+      case Value.Bool(value)    => s"$value"
+      case Value.Unit           => "()"
+      case Value.Uninitialised  => "?"
     }
   }
 
