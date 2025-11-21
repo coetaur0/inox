@@ -18,9 +18,9 @@ private type OriginIds = Map[String, OriginId]
 object Lowerer {
 
   /** Lowers a module declaration to its IR representation. */
-  def lowerModule(moduleDecl: ModuleDecl): Result[Module, LoweringError] = for {
+  def apply(moduleDecl: ModuleDecl): Result[Module, LoweringError] = for {
     globals <- getGlobals(moduleDecl)
-    result <- Lowerer(globals).lowerModule(moduleDecl)
+    result <- new Lowerer(globals).lowerModule(moduleDecl)
   } yield {
     result
   }

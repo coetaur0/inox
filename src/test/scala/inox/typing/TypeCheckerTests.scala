@@ -134,9 +134,9 @@ class TypeCheckerTests extends AnyFunSuite {
   private def checkOk(source: String): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir) =>
-            TypeChecker.checkModule(ir) match {
+            TypeChecker(ir) match {
               case Result.Success(_)      => assert(true)
               case Result.Failure(errors) =>
                 assert(
@@ -160,9 +160,9 @@ class TypeCheckerTests extends AnyFunSuite {
   private def checkError(source: String, expected: Seq[TypeError]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir) =>
-            TypeChecker.checkModule(ir) match {
+            TypeChecker(ir) match {
               case Result.Success(_) => assert(false, "Expected type errors in the input string.")
               case Result.Failure(errors) => assert(errors == expected)
             }

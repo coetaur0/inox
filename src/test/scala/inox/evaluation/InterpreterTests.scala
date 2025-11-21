@@ -42,7 +42,7 @@ class InterpreterTests extends AnyFunSuite {
   private def checkOk(source: String, expected: Interpreter.Value): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir) =>
             Interpreter(ir) match {
               case Result.Success(value)  => assert(value == expected)
@@ -65,7 +65,7 @@ class InterpreterTests extends AnyFunSuite {
   private def checkError(source: String, expected: Seq[RuntimeError]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir) =>
             Interpreter(ir) match {
               case Result.Success(value) =>

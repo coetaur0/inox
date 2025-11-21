@@ -82,7 +82,7 @@ class InitAnalysisTests extends AnyFunSuite {
   private def check(source: String, expected: IndexedSeq[InitMap]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir) => {
             val (locals, _) = AliasAnalysis(ir, ir("main"))
             assert(InitAnalysis(locals, ir("main")) == expected)

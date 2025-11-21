@@ -9,7 +9,7 @@ import scala.collection.mutable
 object BorrowChecker {
 
   /** Borrow checks an IR module. */
-  def checkModule(module: inox.ir.Module): Result[Unit, BorrowError] = Result.build { errors =>
+  def apply(module: inox.ir.Module): Result[Unit, BorrowError] = Result.build { errors =>
     for { (_, function) <- module } {
       checkFunction(module, function).handleFailure(errs => errors ++= errs)
     }

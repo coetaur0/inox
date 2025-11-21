@@ -13,8 +13,8 @@ import scala.collection.mutable
 object TypeChecker {
 
   /** Type checks an IR module. */
-  def checkModule(module: Module): Result[Unit, TypeError] = Result.build { errors =>
-    val typeChecker = TypeChecker(module)
+  def apply(module: Module): Result[Unit, TypeError] = Result.build { errors =>
+    val typeChecker = new TypeChecker(module)
     for { (_, function) <- module } {
       typeChecker.checkFunction(function).handleFailure(errs => errors ++= errs)
     }

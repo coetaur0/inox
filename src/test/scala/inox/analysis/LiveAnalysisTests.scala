@@ -36,7 +36,7 @@ class LiveAnalysisTests extends AnyFunSuite {
   private def check(source: String, expected: IndexedSeq[LiveSet]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir)     => assert(LiveAnalysis(ir("main")) == expected)
           case Result.Failure(errors) =>
             assert(

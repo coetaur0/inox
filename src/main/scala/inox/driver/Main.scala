@@ -16,9 +16,9 @@ def main(path: String): Unit = {
   file.close()
   val result: Result[Interpreter.Value, InoxError] = for {
     ast <- Parser.parseModule(src).asInstanceOf[Result[inox.ast.ModuleDecl, InoxError]]
-    ir <- Lowerer.lowerModule(ast).asInstanceOf[Result[inox.ir.Module, InoxError]]
-    _ <- BorrowChecker.checkModule(ir).asInstanceOf[Result[Unit, InoxError]]
-    _ <- TypeChecker.checkModule(ir).asInstanceOf[Result[Unit, InoxError]]
+    ir <- Lowerer(ast).asInstanceOf[Result[inox.ir.Module, InoxError]]
+    _ <- TypeChecker(ir).asInstanceOf[Result[Unit, InoxError]]
+    _ <- BorrowChecker(ir).asInstanceOf[Result[Unit, InoxError]]
     value <- Interpreter(ir).asInstanceOf[Result[Interpreter.Value, InoxError]]
   } yield {
     value

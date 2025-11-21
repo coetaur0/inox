@@ -234,7 +234,7 @@ class AliasAnalysisTests extends AnyFunSuite {
   private def check(source: String, expected: IndexedSeq[AliasMap]): Unit =
     Parser.parseModule(source) match {
       case Result.Success(ast) =>
-        Lowerer.lowerModule(ast) match {
+        Lowerer(ast) match {
           case Result.Success(ir)     => assert(AliasAnalysis(ir, ir("main"))._2 == expected)
           case Result.Failure(errors) =>
             assert(
