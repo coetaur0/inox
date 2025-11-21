@@ -34,7 +34,7 @@ class LiveAnalysisTests extends AnyFunSuite {
     * `expected` sequence of local id sets.
     */
   private def check(source: String, expected: IndexedSeq[LiveSet]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir)     => assert(LiveAnalysis(ir("main")) == expected)

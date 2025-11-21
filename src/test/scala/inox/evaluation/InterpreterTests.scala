@@ -40,7 +40,7 @@ class InterpreterTests extends AnyFunSuite {
 
   /** Checks that interpreting the module in a source string returns the expected result. */
   private def checkOk(source: String, expected: Interpreter.Value): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>
@@ -63,7 +63,7 @@ class InterpreterTests extends AnyFunSuite {
     }
 
   private def checkError(source: String, expected: Seq[RuntimeError]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>

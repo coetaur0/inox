@@ -7,19 +7,19 @@ class ParserTests extends AnyFunSuite {
   test("Function declarations should be properly parsed") {
     checkOk(
       "fn f<'a>(r: &'a mut i32) -> i32 { *r } fn main() { f::<'_>(&42) }",
-      Parser.parseModule
+      Parser.apply
     )
 
     checkError(
       "fn f() {} fn f() {}",
-      Parser.parseModule,
+      Parser.apply,
       Seq(
         ParseError.DuplicateFunction(Spanned("f", Span(Location(1, 14, 13), Location(1, 15, 14))))
       )
     )
     checkError(
       "fn f() -> {}",
-      Parser.parseModule,
+      Parser.apply,
       Seq(
         ParseError.UnexpectedSymbol(
           "a type expression",

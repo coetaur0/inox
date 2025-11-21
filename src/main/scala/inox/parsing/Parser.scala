@@ -13,22 +13,23 @@ object Parser {
   /** Parses a module declaration in a source and returns the corresponding AST or a sequence of
     * errors if parsing fails.
     */
-  def parseModule(source: String): Result[ModuleDecl, ParseError] = Parser(source).parseModule()
+  def apply(source: String): Result[ModuleDecl, ParseError] = new Parser(source).parseModule()
 
   /** Parses a statement in a source and returns the corresponding AST or a sequence of errors if
     * parsing fails.
     */
-  def parseStmt(source: String): Result[Stmt, ParseError] = Parser(source).parseStmt()
+  def parseStmt(source: String): Result[Stmt, ParseError] = new Parser(source).parseStmt()
 
   /** Parses an expression in a source and returns the corresponding AST or a sequence of errors if
     * parsing fails.
     */
-  def parseExpr(source: String): Result[Expr, ParseError] = Parser(source).parseExpr()
+  def parseExpr(source: String): Result[Expr, ParseError] = new Parser(source).parseExpr()
 
   /** Parses a type expression in a source and returns the corresponding AST or a sequence of errors
     * if parsing fails.
     */
-  def parseTypeExpr(source: String): Result[TypeExpr, ParseError] = Parser(source).parseTypeExpr()
+  def parseTypeExpr(source: String): Result[TypeExpr, ParseError] =
+    new Parser(source).parseTypeExpr()
 }
 
 /** A parser for Inox. */

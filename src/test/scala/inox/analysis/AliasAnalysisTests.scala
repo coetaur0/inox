@@ -232,7 +232,7 @@ class AliasAnalysisTests extends AnyFunSuite {
     * `expected` sequence of alias maps.
     */
   private def check(source: String, expected: IndexedSeq[AliasMap]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir)     => assert(AliasAnalysis(ir, ir("main"))._2 == expected)

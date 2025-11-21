@@ -76,7 +76,7 @@ class BorrowCheckerTests extends AnyFunSuite {
   /** Checks that borrow checking the declarations in a source string succeeds.
     */
   private def checkOk(source: String): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>
@@ -102,7 +102,7 @@ class BorrowCheckerTests extends AnyFunSuite {
     * of type errors.
     */
   private def checkError(source: String, expected: Seq[BorrowError]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>

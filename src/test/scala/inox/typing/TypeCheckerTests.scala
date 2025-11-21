@@ -132,7 +132,7 @@ class TypeCheckerTests extends AnyFunSuite {
 
   /** Checks that type checking the declarations in a source string succeeds. */
   private def checkOk(source: String): Unit =
-    Parser.parseModule(source) match {
+    Parser.apply(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>
@@ -158,7 +158,7 @@ class TypeCheckerTests extends AnyFunSuite {
     * of type errors.
     */
   private def checkError(source: String, expected: Seq[TypeError]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) =>

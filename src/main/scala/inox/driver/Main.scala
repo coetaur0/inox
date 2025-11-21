@@ -15,7 +15,7 @@ def main(path: String): Unit = {
   val src = file.mkString
   file.close()
   val result: Result[Interpreter.Value, InoxError] = for {
-    ast <- Parser.parseModule(src).asInstanceOf[Result[inox.ast.ModuleDecl, InoxError]]
+    ast <- Parser(src).asInstanceOf[Result[inox.ast.ModuleDecl, InoxError]]
     ir <- Lowerer(ast).asInstanceOf[Result[inox.ir.Module, InoxError]]
     _ <- TypeChecker(ir).asInstanceOf[Result[Unit, InoxError]]
     _ <- BorrowChecker(ir).asInstanceOf[Result[Unit, InoxError]]

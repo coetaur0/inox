@@ -80,7 +80,7 @@ class InitAnalysisTests extends AnyFunSuite {
     * returns an `expected` sequence of initialisation maps.
     */
   private def check(source: String, expected: IndexedSeq[InitMap]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) => {

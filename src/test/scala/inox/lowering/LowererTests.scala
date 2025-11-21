@@ -94,7 +94,7 @@ class LowererTests extends AnyFunSuite {
   }
 
   /** Checks that lowering the declarations in a source string succeeds. */
-  private def checkOk(source: String): Unit = Parser.parseModule(source) match {
+  private def checkOk(source: String): Unit = Parser(source) match {
     case Result.Success(ast) =>
       Lowerer(ast) match
         case Result.Success(ir)     => assert(true)
@@ -111,7 +111,7 @@ class LowererTests extends AnyFunSuite {
     * lowering errors.
     */
   private def checkError(source: String, expected: Seq[LoweringError]): Unit =
-    Parser.parseModule(source) match {
+    Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {
           case Result.Success(ir) => assert(false, "Expected lowering errors in the input string.")
