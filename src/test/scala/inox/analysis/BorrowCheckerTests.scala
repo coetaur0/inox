@@ -1,5 +1,6 @@
 package inox.analysis
 
+import inox.analysis.base.BorrowChecker
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 import inox.util.{Location, Result, Span, Spanned}

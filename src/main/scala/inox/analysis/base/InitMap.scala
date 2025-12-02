@@ -1,4 +1,4 @@
-package inox.analysis
+package inox.analysis.base
 
 import inox.ir.{Local, LocalId}
 
@@ -9,9 +9,9 @@ enum InitState {
   case Uninitialized
 
   override def toString: String = this match {
-    case Initialized      => "initialized"
-    case MaybeInitialized => "maybe initialized"
-    case Uninitialized    => "uninitialized"
+    case Initialized      => "⊤"
+    case MaybeInitialized => "?"
+    case Uninitialized    => "⊥"
   }
 
   /** Alias for `union`. */

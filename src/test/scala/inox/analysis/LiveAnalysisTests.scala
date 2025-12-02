@@ -1,9 +1,9 @@
 package inox.analysis
 
-import org.scalatest.funsuite.AnyFunSuite
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 import inox.util.Result
+import org.scalatest.funsuite.AnyFunSuite
 
 class LiveAnalysisTests extends AnyFunSuite {
   test("Live variables should be correctly computed") {

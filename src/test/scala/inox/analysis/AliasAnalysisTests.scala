@@ -1,9 +1,9 @@
 package inox.analysis
 
-import org.scalatest.funsuite.AnyFunSuite
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 import inox.util.Result
+import org.scalatest.funsuite.AnyFunSuite
 
 class AliasAnalysisTests extends AnyFunSuite {
   test("Alias analysis should be correctly computed") {
@@ -14,36 +14,36 @@ class AliasAnalysisTests extends AnyFunSuite {
         |  r = &mut x;
         |}""".stripMargin,
       IndexedSeq(
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (true, Set()),
-            (true, Set())
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (true, Set()),
-            (true, Set(1))
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Variable(1)
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (true, Set(1)),
-            (true, Set(1))
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Variable(1),
+            Alias.Variable(1)
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (true, Set(1)),
-            (true, Set(1))
+            Alias.None,
+            Alias.Undefined,
+            Alias.Variable(1),
+            Alias.Variable(1)
           )
         )
       )
@@ -53,40 +53,40 @@ class AliasAnalysisTests extends AnyFunSuite {
         |  let r = &x;
         |}""".stripMargin,
       IndexedSeq(
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set(4)),
-            (false, Set()),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.Variable(4),
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set(4)),
-            (false, Set(1)),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.Variable(4),
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set(4)),
-            (false, Set(1)),
-            (false, Set(1)),
-            (false, Set())
+            Alias.Undefined,
+            Alias.Variable(4),
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set(4)),
-            (false, Set(1)),
-            (false, Set(1)),
-            (false, Set())
+            Alias.None,
+            Alias.Variable(4),
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.None
           )
         )
       )
@@ -103,125 +103,234 @@ class AliasAnalysisTests extends AnyFunSuite {
         |  };
         |}""".stripMargin,
       IndexedSeq(
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(1)),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Undefined,
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(1)),
-            (false, Set(1)),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(1)),
-            (false, Set(1)),
-            (false, Set()),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(2)),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Variable(2),
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(2)),
-            (false, Set()),
-            (false, Set(2)),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(2),
+            Alias.Undefined,
+            Alias.Variable(2),
+            Alias.Undefined
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(2)),
-            (false, Set()),
-            (false, Set(2)),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(2),
+            Alias.Undefined,
+            Alias.Variable(2),
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(1, 2)),
-            (false, Set(1)),
-            (false, Set(2)),
-            (false, Set())
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.None
+          ),
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(2),
+            Alias.Undefined,
+            Alias.Variable(2),
+            Alias.None
           )
         ),
-        AliasMap(
+        Set(
           IndexedSeq(
-            (false, Set()),
-            (false, Set()),
-            (false, Set()),
-            (false, Set(1, 2)),
-            (false, Set(1)),
-            (false, Set(2)),
-            (false, Set())
+            Alias.None,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.None
+          ),
+          IndexedSeq(
+            Alias.None,
+            Alias.None,
+            Alias.None,
+            Alias.Variable(2),
+            Alias.Undefined,
+            Alias.Variable(2),
+            Alias.None
+          )
+        )
+      )
+    )
+    check(
+      "fn f<'a>(x: &'a i32, y: &'a i32) -> &'a i32 { x } fn main() { f(&42, &1337) }",
+      IndexedSeq(
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Undefined,
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(3),
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(3),
+            Alias.Variable(1)
+          ),
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(3),
+            Alias.Variable(3)
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(3),
+            Alias.Variable(1)
+          ),
+          IndexedSeq(
+            Alias.Variable(3),
+            Alias.None,
+            Alias.Variable(1),
+            Alias.None,
+            Alias.Variable(3),
+            Alias.Variable(3)
           )
         )
       )
@@ -229,9 +338,9 @@ class AliasAnalysisTests extends AnyFunSuite {
   }
 
   /** Checks that the result of alias analysis on the declaration in a source string returns an
-    * `expected` sequence of alias maps.
+    * `expected` sequence of aliasing states.
     */
-  private def check(source: String, expected: IndexedSeq[AliasMap]): Unit =
+  private def check(source: String, expected: IndexedSeq[AliasState]): Unit =
     Parser(source) match {
       case Result.Success(ast) =>
         Lowerer(ast) match {

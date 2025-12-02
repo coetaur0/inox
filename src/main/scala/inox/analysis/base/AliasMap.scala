@@ -1,4 +1,4 @@
-package inox.analysis
+package inox.analysis.base
 
 import inox.ir.{Local, LocalId, TypeKind}
 

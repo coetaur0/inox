@@ -1,12 +1,13 @@
 package inox.analysis
 
+import inox.analysis.base.{AliasAnalysis, InitAnalysis, InitMap}
 import org.scalatest.funsuite.AnyFunSuite
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 import inox.util.Result
 
 class InitAnalysisTests extends AnyFunSuite {
-  import InitState.*
+  import inox.analysis.base.InitState.*
 
   test("Initialisation analysis should be correctly computed") {
     check(

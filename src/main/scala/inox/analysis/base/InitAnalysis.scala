@@ -1,5 +1,6 @@
-package inox.analysis
+package inox.analysis.base
 
+import inox.analysis.ForwardAnalysis
 import inox.ast.BinaryOp
 import inox.ir.*
 

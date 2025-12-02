@@ -1,5 +1,7 @@
-package inox.analysis
+package inox.analysis.base
 
+import inox.analysis.base.*
+import inox.analysis.{BorrowError, LiveAnalysis, LiveSet}
 import inox.ir.*
 import inox.util.{Result, Spanned}
 

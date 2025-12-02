@@ -1,9 +1,9 @@
 package inox.lowering
 
-import org.scalatest.funsuite.AnyFunSuite
 import inox.ir.Type
 import inox.parsing.Parser
 import inox.util.{Location, Result, Span, Spanned}
+import org.scalatest.funsuite.AnyFunSuite
 
 class LowererTests extends AnyFunSuite {
   test("Function declarations should be lowered properly") {
