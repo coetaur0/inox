@@ -1,13 +1,12 @@
-package inox.analysis.base
+package inox.analysis
 
-import inox.analysis.base.*
-import inox.analysis.{BorrowError, LiveAnalysis, LiveSet}
+import inox.ir
 import inox.ir.*
 import inox.util.{Result, Spanned}
 
 import scala.collection.mutable
 
-/** A borrow checker for Inox. */
+/** The Inox borrow checker. */
 object BorrowChecker {
 
   /** Borrow checks an IR module. */
@@ -23,24 +22,21 @@ object BorrowChecker {
       module: inox.ir.Module,
       function: inox.ir.Function
   ): Result[Unit, BorrowError] = {
-    val live = LiveAnalysis(function).tail
+    val live = LiveAnalysis(function)
     val (locals, aliases) = AliasAnalysis(module, function)
-    val init = InitAnalysis(locals, function)
-    new BorrowChecker(locals, function.locals.length, live, aliases, init).checkBlock(function.body)
+    new BorrowChecker(locals, function.locals.length, live, aliases).checkBlock(function.body)
   }
 }
 
-/** A borrow checker for an Inox function. */
-private class BorrowChecker(
+/** The Inox borrow checker. */
+class BorrowChecker(
     locals: IndexedSeq[Local],
     localCount: Int,
-    live: IndexedSeq[LiveSet],
-    aliases: IndexedSeq[AliasMap],
-    init: IndexedSeq[InitMap]
+    liveness: IndexedSeq[LiveSet],
+    aliasing: IndexedSeq[AliasState]
 ) {
-  private var remainingLive = live
-  private var remainingAliases = aliases
-  private var remainingInit = init
+  private var liveStates = liveness
+  private var aliasStates = aliasing
 
   /** Borrow checks a block of instructions. */
   private def checkBlock(block: Block): Result[Unit, BorrowError] = if (block.isEmpty) {
@@ -60,7 +56,7 @@ private class BorrowChecker(
     case Instr.Borrow(target, mutable, source) => checkBorrow(target, mutable, source)
     case Instr.Assign(target, value)           => checkAssign(target, value)
     case Instr.Binary(target, op, lhs, rhs)    => checkBinary(target, lhs, rhs)
-    case Instr.Unary(target, _, operand)       => checkAssign(target, operand)
+    case Instr.Unary(target, op, operand)      => checkAssign(target, operand)
     case Instr.Return                          => checkReturn()
   }
 
@@ -75,6 +71,7 @@ private class BorrowChecker(
   /** Borrow checks an if instruction. */
   private def checkIf(cond: Operand, thn: Block, els: Block): Result[Unit, BorrowError] = for {
     _ <- checkOperand(cond)
+    _ = advance()
     _ <- checkBlock(thn)
     _ <- checkBlock(els)
   } yield {
@@ -105,27 +102,24 @@ private class BorrowChecker(
       source: Place
   ): Result[Unit, BorrowError] = for {
     _ <- checkTarget(target)
-    _ <- Result.build { (errors: mutable.Builder[BorrowError, Seq[BorrowError]]) =>
-      if (remainingInit.head(source.item.local) != InitState.Initialized) {
-        errors += BorrowError.UninitializedVariable(
-          Spanned(locals(source.item.local).name.item, target.span)
-        )
-      }
-      for { id <- AliasAnalysis.placeAliases(remainingAliases.head, source.item) } {
-        if (mut && !locals(id).mutable) {
+    _ <- Result.build((errors: mutable.Builder[BorrowError, Seq[BorrowError]]) =>
+      for {
+        aliasMap <- aliasStates.head
+        id = AliasAnalysis.placeAlias(aliasMap, source.item)
+        _ = if (mut && !locals(id).mutable) {
           errors += BorrowError.UnauthorisedBorrow(target.span)
         }
-        for { otherId <- remainingLive.head - id ++ Range(localCount + 1, locals.length) } {
-          if (
-            remainingAliases.head(otherId)._2.contains(id) && (remainingAliases
-              .head(otherId)
-              ._1 || mut)
-          ) {
-            errors += BorrowError.InvalidReborrow(target.span)
+        otherId <- liveStates.head - id ++ Range(localCount + 1, locals.length)
+      } {
+        if (aliasMap(otherId) == Alias.Variable(id)) {
+          (mut, locals(otherId).ty.value.item) match {
+            case (true, _) | (_, TypeKind.Ref(_, true, _)) =>
+              errors += BorrowError.InvalidReborrow(target.span)
+            case (_, _) => ()
           }
         }
       }
-    }
+    )
   } yield {
     ()
   }
@@ -149,40 +143,46 @@ private class BorrowChecker(
     }
 
   /** Borrow checks a return instruction. */
-  private def checkReturn(): Result[Unit, BorrowError] =
-    if (remainingInit.head(0) == InitState.Initialized) {
-      Result.Success(())
-    } else {
-      Result.fail(BorrowError.UninitializedVariable(locals(0).name))
+  private def checkReturn(): Result[Unit, BorrowError] = Result.build(errors =>
+    for { aliasMap <- aliasStates.head } {
+      if (aliasMap(0) == Alias.Undefined) {
+        errors += BorrowError.UninitializedVariable(locals(0).name)
+      }
     }
+  )
 
-  /** Checks if an instruction target can be assigned to. */
-  private def checkTarget(target: Place): Result[Unit, BorrowError] = Result.build { errors =>
-    for { id <- AliasAnalysis.placeAliases(remainingAliases.head, target.item) } {
-      if (!locals(id).mutable && remainingInit.head(id) != InitState.Uninitialized) {
+  /** Checks that an instruction target can be assigned to. */
+  private def checkTarget(target: Place): Result[Unit, BorrowError] = Result.build(errors =>
+    for { aliasMap <- aliasStates.head } {
+      val id = AliasAnalysis.placeAlias(aliasMap, target.item)
+      if (!locals(id).mutable && aliasMap(id) != Alias.Undefined) {
         errors += BorrowError.UnauthorisedReassignment(Spanned(locals(id).name.item, target.span))
       }
-      for { otherId <- remainingLive.head ++ Range(localCount + 1, locals.length) } {
-        if (remainingAliases.head(otherId)._2.contains(id)) {
+      for {
+        otherId <- liveStates.head - target.item.local ++ Range(localCount + 1, locals.length)
+      } {
+        if (aliasMap(otherId) == Alias.Variable(id)) {
           errors += BorrowError.UnauthorisedAssignment(Spanned(locals(id).name.item, target.span))
         }
       }
     }
-  }
+  )
 
-  /** Checks if an instruction operand is initialised before being used. */
-  private def checkOperand(operand: Operand): Result[Unit, BorrowError] = Result.build { errors =>
-    for { id <- operand.item.locals } {
-      if (remainingInit.head(id) != InitState.Initialized) {
+  /** Checks that an instruction operand is initialised before being used. */
+  private def checkOperand(operand: Operand): Result[Unit, BorrowError] = Result.build(errors =>
+    for {
+      id <- operand.item.locals
+      aliasMap <- aliasStates.head
+    } {
+      if (aliasMap(id) == Alias.Undefined) {
         errors += BorrowError.UninitializedVariable(Spanned(locals(id).name.item, operand.span))
       }
     }
-  }
+  )
 
   /** Advances the borrow checker to the next instruction. */
   private def advance(): Unit = {
-    remainingLive = remainingLive.tail
-    remainingAliases = remainingAliases.tail
-    remainingInit = remainingInit.tail
+    liveStates = liveStates.tail
+    aliasStates = aliasStates.tail
   }
 }

@@ -25,7 +25,7 @@ type AliasMap = IndexedSeq[Alias]
 /** An aliasing state for alias analysis. */
 type AliasState = Set[AliasMap]
 
-/** Alias analysis for an Inox function. */
+/** Inox's alias analysis. */
 object AliasAnalysis {
 
   /** Applies alias analysis on a function declaration. */
@@ -41,6 +41,22 @@ object AliasAnalysis {
         initParam(locals, aliases, param, id + 1)
       }
     (locals, new AliasAnalysis(module, locals)(IndexedSeq(Set(aliases)), function.body))
+  }
+
+  /** Returns the alias that an instruction operand references in a given alias map. */
+  def operandAlias(aliases: AliasMap, operand: Operand): Alias = operand.item match {
+    case OperandKind.Place(place) => aliases(placeAlias(aliases, place))
+    case _                        => Alias.None
+  }
+
+  /** Returns the id of the local that a place expression references in a given alias map. */
+  def placeAlias(aliases: AliasMap, place: PlaceKind): LocalId = place match {
+    case PlaceKind.Deref(subplace) =>
+      aliases(placeAlias(aliases, subplace.item)) match {
+        case Alias.Variable(id) => id
+        case _ => 0 // Unreachable: dereference operations can only be applied to references.
+      }
+    case PlaceKind.Var(id) => id
   }
 
   /** Extends the list of locals and the initial alias map of a function with aliasing information
@@ -98,22 +114,6 @@ object AliasAnalysis {
       result + aliases.updated(id, f(aliases))
     }
 
-  /** Returns the alias that an instruction operand references in a given alias map. */
-  private def operandAlias(aliases: AliasMap, operand: Operand): Alias = operand.item match {
-    case OperandKind.Place(place) => aliases(placeAlias(aliases, place))
-    case _                        => Alias.None
-  }
-
-  /** Returns the id of the local that a place expression references in a given alias map. */
-  private def placeAlias(aliases: AliasMap, place: PlaceKind): LocalId = place match {
-    case PlaceKind.Deref(subplace) =>
-      aliases(placeAlias(aliases, subplace.item)) match {
-        case Alias.Variable(id) => id
-        case _ => 0 // Unreachable: dereference operations can only be applied to references.
-      }
-    case PlaceKind.Var(id) => id
-  }
-
   /** Returns the aliasing state that a call instruction may return in a given alias map, depending
     * on its arguments and parameter and return types.
     */
@@ -153,7 +153,7 @@ object AliasAnalysis {
   }
 }
 
-/** Alias analysis for an Inox function. */
+/** Inox's alias analysis. */
 class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
     extends ForwardAnalysis[AliasState] {
   import AliasAnalysis.*
@@ -168,7 +168,7 @@ class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
       val loopStates = apply(IndexedSeq(state), body)
       val nextState = loopStates.last | state
       if (nextState == state) {
-        loopStates.tail :+ nextState
+        loopStates.init :+ nextState
       } else {
         fixpoint(nextState)
       }
@@ -185,7 +185,7 @@ class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
     val entryState = states.last
     val thenStates = apply(IndexedSeq(entryState), thn)
     val elseStates = apply(IndexedSeq(entryState), els)
-    states :++ thenStates.tail :++ elseStates.tail :+ (thenStates.last | elseStates.last)
+    states :++ thenStates.init :++ elseStates.init :+ (thenStates.last | elseStates.last)
   }
 
   override def callInstr(

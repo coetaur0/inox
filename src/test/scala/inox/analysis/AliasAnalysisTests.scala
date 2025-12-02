@@ -142,6 +142,17 @@ class AliasAnalysisTests extends AnyFunSuite {
             Alias.None,
             Alias.None,
             Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
+          )
+        ),
+        Set(
+          IndexedSeq(
+            Alias.Undefined,
+            Alias.None,
+            Alias.None,
+            Alias.Undefined,
             Alias.Variable(1),
             Alias.Undefined,
             Alias.Undefined
@@ -163,10 +174,10 @@ class AliasAnalysisTests extends AnyFunSuite {
             Alias.Undefined,
             Alias.None,
             Alias.None,
-            Alias.Variable(1),
-            Alias.Variable(1),
             Alias.Undefined,
-            Alias.None
+            Alias.Undefined,
+            Alias.Undefined,
+            Alias.Undefined
           )
         ),
         Set(
@@ -189,17 +200,6 @@ class AliasAnalysisTests extends AnyFunSuite {
             Alias.Undefined,
             Alias.Variable(2),
             Alias.Undefined
-          )
-        ),
-        Set(
-          IndexedSeq(
-            Alias.Undefined,
-            Alias.None,
-            Alias.None,
-            Alias.Variable(2),
-            Alias.Undefined,
-            Alias.Variable(2),
-            Alias.None
           )
         ),
         Set(

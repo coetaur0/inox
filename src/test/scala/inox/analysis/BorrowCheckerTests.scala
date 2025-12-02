@@ -1,6 +1,6 @@
 package inox.analysis
 
-import inox.analysis.base.BorrowChecker
+import inox.analysis.BorrowChecker
 import inox.lowering.Lowerer
 import inox.parsing.Parser
 import inox.util.{Location, Result, Span, Spanned}
@@ -8,8 +8,15 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class BorrowCheckerTests extends AnyFunSuite {
   test("Borrow checking should work correctly") {
-    checkOk("fn f<'a>(r: &'a mut i32) { let x = &mut *r; }")
-    checkOk("fn f<'a>(r: &'a mut i32) { let x = &mut *r; *x = 42; }")
+    checkOk("""fn main() {
+        |  let x: i32;
+        |  let r = &x;
+        |}""".stripMargin)
+    checkOk("""fn main() {
+        |  let x = 42;
+        |  let r = &x;
+        |  let q = &x;
+        |}""".stripMargin)
     checkOk("""fn main() {
         |  let x: i32;
         |  let y = 42;
@@ -20,6 +27,20 @@ class BorrowCheckerTests extends AnyFunSuite {
         |  };
         |  x;
         |}""".stripMargin)
+    checkOk("""fn main() -> i32 {
+        |  let mut x: i32;
+        |  let mut y: i32;
+        |  let r: &mut i32;
+        |  if true {
+        |    x = 42;
+        |    r = &mut y;
+        |  } else {
+        |    y = 1337;
+        |    r = &mut x;
+        |  };
+        |  *r = 10;
+        |  x
+        |}""".stripMargin)
 
     checkError(
       """fn main() {
@@ -27,6 +48,15 @@ class BorrowCheckerTests extends AnyFunSuite {
         |  let r = &mut x;
         |}""".stripMargin,
       Seq(BorrowError.UnauthorisedBorrow(Span(Location(3, 11, 36), Location(3, 17, 42))))
+    )
+    checkError(
+      """fn main() {
+        |  let mut x = 42;
+        |  let r = &mut x;
+        |  let q = &mut x;
+        |  let z = r;
+        |}""".stripMargin,
+      Seq(BorrowError.InvalidReborrow(Span(Location(4, 11, 58), Location(4, 17, 64))))
     )
     checkError(
       """fn main() {
@@ -64,18 +94,17 @@ class BorrowCheckerTests extends AnyFunSuite {
     checkError(
       """fn main() {
         |  let x: i32;
-        |  let r = &x;
+        |  let y = x;
         |}""".stripMargin,
       Seq(
         BorrowError.UninitializedVariable(
-          Spanned("x", Span(Location(3, 11, 36), Location(3, 13, 38)))
+          Spanned("x", Span(Location(3, 11, 36), Location(3, 12, 37)))
         )
       )
     )
   }
 
-  /** Checks that borrow checking the declarations in a source string succeeds.
-    */
+  /** Checks that borrow checking the declarations in a source string succeeds. */
   private def checkOk(source: String): Unit =
     Parser(source) match {
       case Result.Success(ast) =>

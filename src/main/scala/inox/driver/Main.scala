@@ -1,6 +1,6 @@
 package inox.driver
 
-import inox.analysis.base.BorrowChecker
+import inox.analysis.BorrowChecker
 import inox.evaluation.Interpreter
 import inox.lowering.Lowerer
 import inox.parsing.Parser
