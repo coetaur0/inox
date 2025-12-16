@@ -73,7 +73,7 @@ object AliasAnalysis {
       val (newLocals, newAliases) = initExtern(locals, aliases, mut, newName, ty)
       (newLocals, newAliases.updated(id, Alias.Variable(newLocals.length - 1)))
     }
-    case _ => (locals, aliases)
+    case _ => (locals, aliases.updated(id, Alias.None))
   }
 
   /** Extends the locals and the initial alias map of a function with aliasing information for a
