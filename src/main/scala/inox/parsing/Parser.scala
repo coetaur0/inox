@@ -455,17 +455,32 @@ private class Parser(source: String) {
     case _               => expected("a type expression")
   }
 
-  /** Parses a parenthesised type expression. */
+  /** Parses a parenthesised or tuple type expression. */
   private def parseParenType(): Result[TypeExpr, ParseError] = {
     val start = advance().span.start
     if (token.item == Token.RParen) {
       Result.Success(TypeExpr.Unit(Span(start, advance().span.end)))
     } else {
       for {
-        ty <- parseTypeExpr()
-        _ <- close("(", Token.RParen)
+        first <- parseTypeExpr()
+        result <-
+          if (token.item == Token.Comma) {
+            advance()
+            for {
+              rest <- parseList(parseTypeExpr, Token.Comma, Token.RParen)
+              close <- close("(", Token.RParen)
+            } yield {
+              TypeExpr.Tuple(first +: rest, Span(start, close.end))
+            }
+          } else {
+            for {
+              _ <- close("(", Token.RParen)
+            } yield {
+              first
+            }
+          }
       } yield {
-        ty
+        result
       }
     }
   }

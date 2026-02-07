@@ -194,6 +194,11 @@ class ParserTests extends AnyFunSuite {
     checkOk("&'a mut i32", Parser.parseTypeExpr)
     checkOk("(i32)", Parser.parseTypeExpr)
     checkOk("bool", Parser.parseTypeExpr)
+    checkOk("()", Parser.parseTypeExpr)
+    checkOk("(i32, bool)", Parser.parseTypeExpr)
+    checkOk("(i32, bool, i32)", Parser.parseTypeExpr)
+    checkOk("(bool, (i32, i32))", Parser.parseTypeExpr)
+    checkOk("(&i32, &mut bool)", Parser.parseTypeExpr)
 
     checkError(
       "(i32",
@@ -223,6 +228,17 @@ class ParserTests extends AnyFunSuite {
         ParseError.UnexpectedSymbol(
           "a type expression",
           Spanned("true", Span(Location(1, 2, 1), Location(1, 6, 5)))
+        )
+      )
+    )
+    checkError(
+      "(i32, bool",
+      Parser.parseTypeExpr,
+      Seq(
+        ParseError.UnclosedDelimiter(
+          "(",
+          "a ')'",
+          Spanned("", Span(Location(1, 11, 10), Location(1, 11, 10)))
         )
       )
     )

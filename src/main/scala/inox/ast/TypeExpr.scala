@@ -10,6 +10,9 @@ object TypeExpr {
   def Fn(params: IndexedSeq[TypeExpr], result: TypeExpr, span: Span): TypeExpr =
     Spanned(TypeExprKind.Fn(params, result), span)
 
+  def Tuple(elems: IndexedSeq[TypeExpr], span: Span): TypeExpr =
+    Spanned(TypeExprKind.Tuple(elems), span)
+
   def Ref(
       origin: Option[Name],
       mutable: Boolean,
@@ -27,6 +30,7 @@ object TypeExpr {
 /** A type expression kind. */
 enum TypeExprKind {
   case Fn(params: IndexedSeq[TypeExpr], result: TypeExpr)
+  case Tuple(elems: IndexedSeq[TypeExpr])
   case Ref(origin: Option[Name], mutable: Boolean, ty: TypeExpr)
   case I32
   case Bool
