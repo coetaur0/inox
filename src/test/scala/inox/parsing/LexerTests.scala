@@ -87,11 +87,12 @@ class LexerTests extends AnyFunSuite {
 
   test("Punctuation should be lexed properly") {
     check(
-      "& -> , : :: = < { ( > } ) ;",
+      "& -> , . : :: = < { ( > } ) ;",
       List(
         (Token.Ampersand, "&"),
         (Token.Arrow, "->"),
         (Token.Comma, ","),
+        (Token.Dot, "."),
         (Token.Colon, ":"),
         (Token.ColonX2, "::"),
         (Token.Equal, "="),

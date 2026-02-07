@@ -283,27 +283,41 @@ private class Parser(source: String) {
       case None =>
         for {
           callee <- parsePrimary()
-          call <- parseCall(callee)
+          call <- parsePostfix(callee)
         } yield {
           call
         }
     }
   }
 
-  /** Parses a sequence of call expressions. */
-  private def parseCall(callee: Expr): Result[Expr, ParseError] = if (token.item == Token.LParen) {
-    for {
-      args <- parseDelimited(
-        () => parseList(parseExpr, Token.Comma, Token.RParen),
-        Token.LParen,
-        Token.RParen
-      )
-      call <- parseCall(Expr.Call(callee, args.item, Span(callee.span.start, args.span.end)))
-    } yield {
-      call
-    }
-  } else {
-    Result.Success(callee)
+  /** Parses a sequence of postfix expressions (calls and tuple indexing). */
+  private def parsePostfix(expr: Expr): Result[Expr, ParseError] = token.item match {
+    case Token.LParen =>
+      for {
+        args <- parseDelimited(
+          () => parseList(parseExpr, Token.Comma, Token.RParen),
+          Token.LParen,
+          Token.RParen
+        )
+        result <- parsePostfix(Expr.Call(expr, args.item, Span(expr.span.start, args.span.end)))
+      } yield {
+        result
+      }
+    case Token.Dot =>
+      advance()
+      if (token.item == Token.IntLit) {
+        val indexSpan = token.span
+        val index = source.substring(indexSpan.start.offset, indexSpan.end.offset).toInt
+        advance()
+        for {
+          result <- parsePostfix(Expr.TupleIndex(expr, index, Span(expr.span.start, indexSpan.end)))
+        } yield {
+          result
+        }
+      } else {
+        expected("an integer index")
+      }
+    case _ => Result.Success(expr)
   }
 
   /** Parses a primary expression. */
@@ -326,17 +340,32 @@ private class Parser(source: String) {
     case _              => expected("an expression")
   }
 
-  /** Parses a parenthesised expression. */
+  /** Parses a parenthesised expression or tuple literal. */
   private def parseParenExpr(): Result[Expr, ParseError] = {
     val start = advance().span.start
     if (token.item == Token.RParen) {
       Result.Success(Expr.Unit(Span(start, advance().span.end)))
     } else {
       for {
-        expr <- parseExpr()
-        _ <- close("(", Token.RParen)
+        first <- parseExpr()
+        result <-
+          if (token.item == Token.Comma) {
+            advance()
+            for {
+              rest <- parseList(parseExpr, Token.Comma, Token.RParen)
+              close <- close("(", Token.RParen)
+            } yield {
+              Expr.TupleLit(first +: rest, Span(start, close.end))
+            }
+          } else {
+            for {
+              _ <- close("(", Token.RParen)
+            } yield {
+              first
+            }
+          }
       } yield {
-        expr
+        result
       }
     }
   }

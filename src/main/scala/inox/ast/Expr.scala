@@ -31,6 +31,12 @@ object Expr {
   def BoolLit(value: Boolean, span: Span): Expr = Spanned(ExprKind.BoolLit(value), span)
 
   def Unit(span: Span): Expr = Spanned(ExprKind.Unit, span)
+
+  def TupleLit(elems: IndexedSeq[Expr], span: Span): Expr =
+    Spanned(ExprKind.TupleLit(elems), span)
+
+  def TupleIndex(tuple: Expr, index: Int, span: Span): Expr =
+    Spanned(ExprKind.TupleIndex(tuple, index), span)
 }
 
 /** An expression kind. */
@@ -41,7 +47,9 @@ enum ExprKind {
   case Borrow(mutable: Boolean, expr: Expr)
   case Binary(op: BinaryOp, lhs: Expr, rhs: Expr)
   case Unary(op: UnaryOp, expr: Expr)
+  case TupleIndex(tuple: Expr, index: Int)
   case Var(name: Name, origins: IndexedSeq[Option[Name]])
+  case TupleLit(elems: IndexedSeq[Expr])
   case IntLit(value: Int)
   case BoolLit(value: Boolean)
   case Unit

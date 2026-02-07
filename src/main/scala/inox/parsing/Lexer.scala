@@ -74,6 +74,7 @@ class Lexer(source: String) {
       case (Some('&'), _)         => (Token.Ampersand, 1)
       case (Some('!'), _)         => (Token.Bang, 1)
       case (Some(','), _)         => (Token.Comma, 1)
+      case (Some('.'), _)         => (Token.Dot, 1)
       case (Some(':'), _)         => (Token.Colon, 1)
       case (Some('='), _)         => (Token.Equal, 1)
       case (Some('<'), _)         => (Token.LAngle, 1)

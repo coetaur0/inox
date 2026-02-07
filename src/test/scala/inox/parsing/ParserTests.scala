@@ -103,6 +103,16 @@ class ParserTests extends AnyFunSuite {
     checkOk("true", Parser.parseExpr)
     checkOk("false", Parser.parseExpr)
     checkOk("()", Parser.parseExpr)
+    checkOk("(1, 2)", Parser.parseExpr)
+    checkOk("(1, 2, 3)", Parser.parseExpr)
+    checkOk("(x, y, z)", Parser.parseExpr)
+    checkOk("(1 + 2, 3 * 4)", Parser.parseExpr)
+    checkOk("((1, 2), (3))", Parser.parseExpr)
+    checkOk("x.0", Parser.parseExpr)
+    checkOk("x.1", Parser.parseExpr)
+    checkOk("(1, 2).0", Parser.parseExpr)
+    checkOk("f().0", Parser.parseExpr)
+    checkOk("x.0.1", Parser.parseExpr)
 
     checkError(
       "(x + 1",
@@ -143,6 +153,37 @@ class ParserTests extends AnyFunSuite {
           "<",
           "a '>'",
           Spanned("", Span(Location(1, 7, 6), Location(1, 7, 6)))
+        )
+      )
+    )
+    checkError(
+      "(1, 2",
+      Parser.parseExpr,
+      Seq(
+        ParseError.UnclosedDelimiter(
+          "(",
+          "a ')'",
+          Spanned("", Span(Location(1, 6, 5), Location(1, 6, 5)))
+        )
+      )
+    )
+    checkError(
+      "x.",
+      Parser.parseExpr,
+      Seq(
+        ParseError.UnexpectedSymbol(
+          "an integer index",
+          Spanned("", Span(Location(1, 3, 2), Location(1, 3, 2)))
+        )
+      )
+    )
+    checkError(
+      "x.y",
+      Parser.parseExpr,
+      Seq(
+        ParseError.UnexpectedSymbol(
+          "an integer index",
+          Spanned("y", Span(Location(1, 3, 2), Location(1, 4, 3)))
         )
       )
     )

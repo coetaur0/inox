@@ -38,6 +38,7 @@ enum Token {
   case Ampersand
   case Arrow
   case Comma
+  case Dot
   case Colon
   case ColonX2
   case Equal
@@ -83,6 +84,7 @@ enum Token {
     case Ampersand   => "a '&'"
     case Arrow       => "a '->'"
     case Comma       => "a ','"
+    case Dot         => "a '.'"
     case Colon       => "a ':'"
     case ColonX2     => "a '::'"
     case Equal       => "a '='"
