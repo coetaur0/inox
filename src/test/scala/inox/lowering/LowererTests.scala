@@ -84,6 +84,10 @@ class LowererTests extends AnyFunSuite {
     checkOk(
       "fn f<'a, 'b>(x: &'a mut i32, f: fn(&'b i32) -> i32, b: bool) -> bool { true }"
     )
+    checkOk("fn f(x: (i32, bool)) -> i32 { x.0 }")
+    checkOk("fn f() -> (i32, bool, i32) { (1, true, 2) }")
+    checkOk("fn f(x: (i32, (bool, i32))) -> bool { x.1.0 }")
+    checkOk("fn tuple() { let t = (1, 2); let x = t.0; let y = t.1; }")
 
     checkError(
       "fn f(x: &'a i32) {}",

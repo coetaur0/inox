@@ -17,6 +17,11 @@ case class Type(value: Spanned[TypeKind]) {
         lParam === rParam
       } &&
       lResult === rResult
+    case (Tuple(lElems), Tuple(rElems)) =>
+      lElems.length == rElems.length &&
+      lElems.zip(rElems).forall { (lElem, rElem) =>
+        lElem === rElem
+      }
     case (Ref(lOrigin, lMut, lType), Ref(rOrigin, rMut, rType)) =>
       lOrigin == rOrigin && lMut == rMut && lType === rType
     case (I32, I32) | (Bool, Bool) | (Unit, Unit) => true
@@ -31,6 +36,10 @@ case class Type(value: Spanned[TypeKind]) {
         rParam :< lParam
       } &&
       lResult :< rResult
+    case (Tuple(lElems), Tuple(rElems)) =>
+      lElems.length == rElems.length && lElems.zip(rElems).forall { (lElem, rElem) =>
+        lElem :< rElem
+      }
     case (Ref(lOrigin, lMut, lType), Ref(rOrigin, rMut, rType)) =>
       rOrigin.forall(o =>
         lOrigin match
@@ -44,6 +53,7 @@ case class Type(value: Spanned[TypeKind]) {
   def substitute(ids: IndexedSeq[Option[OriginId]]): Type = this.value.item match {
     case Fn(params, result) =>
       Type.Fn(params.map(_.substitute(ids)), result.substitute(ids), this.value.span)
+    case Tuple(elems)         => Type.Tuple(elems.map(_.substitute(ids)), this.value.span)
     case Ref(origin, mut, ty) => {
       val newOrigin: Option[OriginId] =
         origin.flatMap(id => if id < ids.length then ids(id) else origin)
@@ -59,6 +69,8 @@ case class Type(value: Spanned[TypeKind]) {
 object Type {
   def Fn(params: IndexedSeq[Type], result: Type, span: Span): Type =
     Type(Spanned(TypeKind.Fn(params, result), span))
+
+  def Tuple(elems: IndexedSeq[Type], span: Span): Type = Type(Spanned(TypeKind.Tuple(elems), span))
 
   def Ref(
       origin: Option[OriginId],
@@ -78,12 +90,14 @@ object Type {
 enum TypeKind {
   case Fn(params: IndexedSeq[Type], result: Type)
   case Ref(origin: Option[OriginId], mutable: Boolean, ty: Type)
+  case Tuple(elems: IndexedSeq[Type])
   case I32
   case Bool
   case Unit
 
   override def toString: String = this match {
     case Fn(params, result)       => s"fn(${params.mkString(", ")}) -> $result"
+    case Tuple(elems)             => s"(${elems.mkString(", ")})"
     case Ref(origin, mutable, ty) => {
       val mut = if mutable then "mut " else ""
       origin match {

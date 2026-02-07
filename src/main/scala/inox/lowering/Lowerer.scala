@@ -61,6 +61,7 @@ object Lowerer {
     import inox.ast.TypeExprKind.*
     ty.item match {
       case Fn(params, result)      => lowerFnType(origins, params, result, ty.span)
+      case Tuple(elems)            => lowerTupleType(origins, elems, ty.span)
       case Ref(origin, mut, rType) =>
         for {
           originId <- lowerOrigin(origins, origin)
@@ -95,6 +96,22 @@ object Lowerer {
         Type.Unit(span)
       }
     }
+  }
+
+  /** Lowers an AST tuple type expression to its IR representation. */
+  private def lowerTupleType(
+      origins: OriginIds,
+      elems: IndexedSeq[TypeExpr],
+      span: Span
+  ): Result[Type, LoweringError] = Result.build { errors =>
+    val elemTypes = IndexedSeq.newBuilder[Type]
+    for { elem <- elems } {
+      lowerTypeExpr(origins, elem) match {
+        case Result.Success(ty)   => elemTypes += ty
+        case Result.Failure(errs) => errors ++= errs
+      }
+    }
+    Type.Tuple(elemTypes.result(), span)
   }
 
   /** Lowers an AST origin to its IR representation. */
@@ -252,7 +269,9 @@ private class Lowerer(globals: Globals) {
           case UnaryOp.Not   => lowerUnary(UnOp.Not, operand, expr.span)
           case UnaryOp.Neg   => lowerUnary(UnOp.Neg, operand, expr.span)
         }
-      case ExprKind.Var(name, origins) =>
+      case ExprKind.TupleLit(elems)        => lowerTupleLit(elems, expr.span)
+      case ExprKind.TupleIndex(tuple, idx) => lowerTupleIndex(tuple, idx, expr.span)
+      case ExprKind.Var(name, origins)     =>
         for { (operand, ty) <- lowerVar(name, origins, expr.span) } yield {
           (IndexedSeq(), operand, ty)
         }
@@ -408,6 +427,55 @@ private class Lowerer(globals: Globals) {
       locals += Local(true, Spanned("unary_result", span), ty)
       val place = Place.Var(locals.length - 1, span)
       (block :+ Instr.Unary(place, op, operand), Operand.Place(place.item, place.span), ty)
+    }
+
+  /** Lowers a tuple literal expression to its IR representation. */
+  private def lowerTupleLit(
+      elems: IndexedSeq[Expr],
+      span: Span
+  ): Result[(Block, Operand, Type), LoweringError] = Result.build { errors =>
+    val instrs = IndexedSeq.newBuilder[Instr]
+    val operands = IndexedSeq.newBuilder[Operand]
+    val elemTypes = IndexedSeq.newBuilder[Type]
+
+    for { (elem, index) <- elems.zipWithIndex } {
+      lowerExpr(elem) match {
+        case Result.Success((elemBlock, elemOperand, elemType)) => {
+          instrs ++= elemBlock
+          operands += elemOperand
+          elemTypes += elemType
+        }
+        case Result.Failure(errs) => errors ++= errs
+      }
+    }
+
+    val tupleType = Type.Tuple(elemTypes.result(), span)
+    locals += Local(true, Spanned("tuple_result", span), tupleType)
+    val tupleVar = Place.Var(locals.length - 1, span)
+
+    for { (operand, index) <- operands.result().zipWithIndex } {
+      instrs += Instr.Assign(Spanned(PlaceKind.TupleIndex(tupleVar, index), span), operand)
+    }
+
+    (instrs.result(), Operand.Place(tupleVar.item, tupleVar.span), tupleType)
+  }
+
+  /** Lowers a tuple index expression to its IR representation. */
+  private def lowerTupleIndex(
+      tuple: Expr,
+      index: Int,
+      span: Span
+  ): Result[(Block, Operand, Type), LoweringError] =
+    lowerExpr(tuple).flatMap { (block, operand, ty) =>
+      ty.value.item match {
+        case TypeKind.Tuple(elems) if index < elems.length =>
+          val (instrs, place) = asPlace(operand, ty)
+          val indexPlace = Spanned(PlaceKind.TupleIndex(place, index), span)
+          Result.Success(
+            (block :++ instrs, Operand.Place(indexPlace.item, indexPlace.span), elems(index))
+          )
+        case _ => Result.fail(InvalidTupleIndex(ty, index, span))
+      }
     }
 
   /** Lowers a variable expression to its IR representation. */

@@ -9,6 +9,7 @@ enum LoweringError extends InoxError {
   case DuplicateParameter(name: Name)
   case InvalidCallee(ty: Type)
   case InvalidDeref(ty: Type)
+  case InvalidTupleIndex(ty: Type, index: Int, span: Span)
   case UnassignableExpr(span: Span)
   case UndefinedName(name: Name)
   case UndefinedOrigin(name: Name)
@@ -19,8 +20,10 @@ enum LoweringError extends InoxError {
       s"${name.span}: An origin with the name '${name.item}' already exists."
     case DuplicateParameter(name) =>
       s"${name.span}: A parameter with the name '${name.item}' already exists."
-    case InvalidCallee(ty)      => s"${ty.value.span}: Cannot call a value of type '$ty'."
-    case InvalidDeref(ty)       => s"${ty.value.span}: Cannot dereference a value of type '$ty'."
+    case InvalidCallee(ty) => s"${ty.value.span}: Cannot call a value of type '$ty'."
+    case InvalidDeref(ty)  => s"${ty.value.span}: Cannot dereference a value of type '$ty'."
+    case InvalidTupleIndex(ty, index, span) =>
+      s"$span: Cannot index tuple of type '$ty' with index $index."
     case UnassignableExpr(span) =>
       s"$span: Cannot assign a value to an expression that is not a dereference or a variable."
     case UndefinedName(name)   => s"${name.span}: Undefined name '${name.item}'."
