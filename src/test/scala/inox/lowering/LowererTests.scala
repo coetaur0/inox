@@ -78,6 +78,16 @@ class LowererTests extends AnyFunSuite {
         LoweringError.UndefinedOrigin(Spanned("'b", Span(Location(1, 31, 30), Location(1, 33, 32))))
       )
     )
+    checkError(
+      "fn main() { let x = 12; let y = x.1; }",
+      Seq(
+        LoweringError.InvalidTupleIndex(
+          Type.I32(Span(Location(1, 21, 20), Location(1, 23, 22))),
+          1,
+          Span(Location(1, 33, 32), Location(1, 36, 35))
+        )
+      )
+    )
   }
 
   test("Type expressions should be lowered properly") {

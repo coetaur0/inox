@@ -4,7 +4,7 @@ import inox.ast.BinaryOp
 import inox.ir
 import inox.ir.*
 import inox.typing.TypeError.*
-import inox.util.{Result, Spanned}
+import inox.util.{Result, Span, Spanned}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -230,7 +230,8 @@ private class TypeChecker(module: inox.ir.Module) {
   /** Type checks a place expression. */
   private def checkPlace(locals: IndexedSeq[Local], place: Place): Result[Type, TypeError] =
     place.item match {
-      case PlaceKind.Deref(p) =>
+      case PlaceKind.TupleIndex(tuple, index) => checkTupleIndex(locals, tuple, index, place.span)
+      case PlaceKind.Deref(p)                 =>
         checkPlace(locals, p).flatMap { ty =>
           ty.value.item match {
             case TypeKind.Ref(_, _, rType) => Result.Success(rType)
@@ -240,11 +241,26 @@ private class TypeChecker(module: inox.ir.Module) {
       case PlaceKind.Var(id) => Result.Success(locals(id).ty)
     }
 
+  /** Type checks a tuple index place expression. */
+  private def checkTupleIndex(
+      locals: IndexedSeq[Local],
+      tuple: Place,
+      index: Int,
+      span: Span
+  ): Result[Type, TypeError] = checkPlace(locals, tuple).flatMap { ty =>
+    ty.value.item match {
+      case TypeKind.Tuple(elems) if index >= 0 && index < elems.length =>
+        Result.Success(elems(index))
+      case _ => Result.fail(InvalidTupleIndex(ty, index, span))
+    }
+  }
+
   /** Checks that an IR type is well-formed. */
   @tailrec
   private def checkType(ty: Type, withOrigins: Boolean = false): Result[Unit, TypeError] =
     ty.value.item match {
       case TypeKind.Fn(params, result)    => checkFnType(params, result, withOrigins)
+      case TypeKind.Tuple(elems)          => checkTupleType(elems, withOrigins)
       case TypeKind.Ref(origin, _, rType) =>
         if (withOrigins && origin.isEmpty) {
           Result.fail(OriginNeeded(ty.value.span))
@@ -264,6 +280,17 @@ private class TypeChecker(module: inox.ir.Module) {
       checkType(param, withOrigins).handleFailure(errs => errors ++= errs)
     }
     checkType(result, withOrigins).handleFailure(errs => errors ++= errs)
+    ()
+  }
+
+  /** Checks that an IR tuple type is well-formed. */
+  private def checkTupleType(
+      elems: IndexedSeq[Type],
+      withOrigins: Boolean = false
+  ): Result[Unit, TypeError] = Result.build { errors =>
+    for { elem <- elems } {
+      checkType(elem, withOrigins).handleFailure(errs => errors ++= errs)
+    }
     ()
   }
 

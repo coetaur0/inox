@@ -13,6 +13,7 @@ enum TypeError extends InoxError {
   case InvalidDeref(ty: Type)
   case InvalidOperand(found: Type, expected: TypeKind)
   case InvalidOriginArgNum(name: Name, found: Int, expected: Int)
+  case InvalidTupleIndex(ty: Type, index: Int, span: Span)
   case OriginNeeded(span: Span)
 
   override def toString: String = this match {
@@ -31,7 +32,9 @@ enum TypeError extends InoxError {
       s"${found.value.span}: Expected an operand of type '$expected', but found '$found' instead."
     case TypeError.InvalidOriginArgNum(name, found, expected) =>
       s"${name.span}: Expected $expected origin arguments for function '$name', but found $found instead."
+    case InvalidTupleIndex(ty, index, span) =>
+      s"${span}: Cannot index a value of type '$ty' with index $index."
     case TypeError.OriginNeeded(span) =>
-      s"$span All references in function parameters and return types must be annotated with origins."
+      s"$span: All references in function parameters and return types must be annotated with origins."
   }
 }

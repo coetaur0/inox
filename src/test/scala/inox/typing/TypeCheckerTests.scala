@@ -73,6 +73,7 @@ class TypeCheckerTests extends AnyFunSuite {
     checkOk(
       "fn main() { let x = 42; let r = &x; if g() { *r } else { 1 }; } fn g() -> bool { true }"
     )
+    checkOk("fn main() { let x: (i32, i32, (i32, i32)) = (1, 2, (3, 4)); let v: i32 = x.2.1; }")
 
     checkError(
       "fn main() { if 0 { 1 } else { 2 }; }",
