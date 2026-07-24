@@ -4,7 +4,7 @@ import inox.ast.BinaryOp
 import inox.ir
 import inox.ir.*
 import inox.typing.TypeError.*
-import inox.util.{Result, Spanned}
+import inox.util.{Result, Span, Spanned}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -182,7 +182,12 @@ private class TypeChecker(module: inox.ir.Module) {
         } else if (rhsType.value.item != TypeKind.I32) {
           Result.fail(InvalidOperand(rhsType, TypeKind.I32))
         } else {
-          checkCompatibility(targetType, lhsType)
+          val span = Span(lhs.span.start, rhs.span.end)
+          val ty = op match {
+            case BinaryOp.Gt | BinaryOp.Ge | BinaryOp.Lt | BinaryOp.Le => Type.Bool(span)
+            case _                                                     => Type.I32(span)
+          }
+          checkCompatibility(targetType, ty)
         }
     }
   } yield {
