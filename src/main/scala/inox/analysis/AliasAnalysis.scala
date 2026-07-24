@@ -166,7 +166,7 @@ class AliasAnalysis(module: inox.ir.Module, locals: IndexedSeq[Local])
     @tailrec
     def fixpoint(state: AliasState): IndexedSeq[AliasState] = {
       val loopStates = apply(IndexedSeq(state), body)
-      val nextState = loopStates.last | state
+      val nextState = loopStates.last
       if (nextState == state) {
         loopStates.init :+ nextState
       } else {

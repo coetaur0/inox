@@ -19,8 +19,9 @@ enum LoweringError extends InoxError {
       s"${name.span}: An origin with the name '${name.item}' already exists."
     case DuplicateParameter(name) =>
       s"${name.span}: A parameter with the name '${name.item}' already exists."
-    case InvalidCallee(ty)      => s"${ty.value.span}: Cannot call a value of type '$ty'."
-    case InvalidDeref(ty)       => s"${ty.value.span}: Cannot dereference a value of type '$ty'."
+    case InvalidCallee(ty) => s"${ty.value.span}: Cannot call a value of type '${ty.value.item}'."
+    case InvalidDeref(ty)  =>
+      s"${ty.value.span}: Cannot dereference a value of type '${ty.value.item}'."
     case UnassignableExpr(span) =>
       s"$span: Cannot assign a value to an expression that is not a dereference or a variable."
     case UndefinedName(name)   => s"${name.span}: Undefined name '${name.item}'."
