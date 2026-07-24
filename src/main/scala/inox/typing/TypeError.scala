@@ -17,18 +17,18 @@ enum TypeError extends InoxError {
 
   override def toString: String = this match {
     case TypeError.IncompatibleTypes(found, expected) =>
-      s"${found.value.span}: Expected a value of type '$expected', but found type '$found' instead."
+      s"${found.value.span}: Expected a value of type '${expected.value.item}', but found type '${found.value.item}' instead."
     case TypeError.InvalidArgNum(found, expected) =>
-      s"${found.span}: Expected $expected arguments, but found $found instead."
+      s"${found.span}: Expected $expected arguments, but found ${found.item} instead."
     case TypeError.InvalidArgType(found, expected) =>
-      s"${found.value.span}: Expected an argument of type '$expected', but found '$found' instead."
+      s"${found.value.span}: Expected an argument of type '${expected.value.item}', but found '${found.value.item}' instead."
     case TypeError.InvalidCallee(ty)    => s"${ty.value.span}: Cannot call a value of type '$ty'.'"
     case TypeError.InvalidCondition(ty) =>
-      s"${ty.value.span}: Expected a boolean value, but found a value of type '$ty'.'"
+      s"${ty.value.span}: Expected a boolean value, but found a value of type '${ty.value.item}'.'"
     case TypeError.InvalidDeref(ty) =>
-      s"${ty.value.span}: Cannot dereference a value of type '$ty'.'"
+      s"${ty.value.span}: Cannot dereference a value of type '${ty.value.item}'.'"
     case TypeError.InvalidOperand(found, expected) =>
-      s"${found.value.span}: Expected an operand of type '$expected', but found '$found' instead."
+      s"${found.value.span}: Expected an operand of type '$expected', but found '${found.value.item}' instead."
     case TypeError.InvalidOriginArgNum(name, found, expected) =>
       s"${name.span}: Expected $expected origin arguments for function '$name', but found $found instead."
     case TypeError.OriginNeeded(span) =>
