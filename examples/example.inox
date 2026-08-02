@@ -121,10 +121,5 @@ fn main() -> i32 {
 
     countdown::<'_>(&mut y);
 
-    //if *m > v1 {
-    //    *m + v2 + x + y
-    //} else {
-    //    v1 + v2 + x + y
-    //}
     x
 }
