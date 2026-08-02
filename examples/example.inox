@@ -1,0 +1,130 @@
+fn max<'a>(a: &'a i32, b: &'a i32) -> &'a i32 {
+    if *a >= *b {
+        a
+    } else {
+        b
+    }
+}
+
+fn abs(x: i32) -> i32 {
+    if (x < 0) {
+        -x
+    } else {
+        x
+    }
+}
+
+fn increment<'a>(x: &'a mut i32) -> () {
+    *x = *x + 1;
+    ()
+}
+
+fn decrement<'a>(x: &'a mut i32) -> () {
+    *x = *x - 1;
+    ()
+}
+
+fn clamp_positive<'a>(x: &'a mut i32) -> () {
+    if *x < 0 {
+        *x = 0;
+    } else {
+        ();
+    };
+    ()
+}
+
+fn accumulate(n: i32) -> i32 {
+    let mut i: i32 = 0;
+    let mut sum: i32 = 0;
+
+    while i < n {
+        sum = sum + i;
+        i = i + 1;
+    };
+
+    sum
+}
+
+fn gcd(mut a: i32, mut b: i32) -> i32 {
+    while b != 0 {
+        let t: i32 = b;
+        b = a - (a / b) * b;
+        a = t;
+    };
+
+    a
+}
+
+fn select<'x>(flag: bool, a: &'x i32, b: &'x i32) -> &'x i32 {
+    if flag {
+        a
+    } else {
+        b
+    }
+}
+
+fn update<'a>(flag: bool, x: &'a mut i32, y: &'a mut i32) -> () {
+    if flag {
+        increment::<'a>(x);
+        decrement::<'a>(y);
+    } else {
+        decrement::<'a>(x);
+        increment::<'a>(y);
+    };
+
+    ()
+}
+
+fn countdown<'a>(x: &'a mut i32) -> () {
+    while *x > 0 {
+        *x = *x - 1;
+    };
+
+    ()
+}
+
+fn compute(flag: bool, n: i32) -> i32 {
+    let mut a: i32 = accumulate(n);
+    let mut b: i32 = abs(a - 10);
+
+    increment::<'_>(&mut a);
+    clamp_positive::<'_>(&mut b);
+
+    let p: &i32 = &a;
+    let q: &i32 = &b;
+
+    let r: &i32 = select::<'_>(flag, p, q);
+
+    if *r > 5 {
+        *r + gcd(a, b)
+    } else {
+        gcd(a, b)
+    }
+}
+
+fn main() -> i32 {
+    let mut x: i32 = 12;
+    let mut y: i32 = 5;
+
+    let px: &i32 = &x;
+    let py: &i32 = &y;
+
+    let m: &i32 = max::<'_>(px, py);
+
+    increment::<'_>(&mut x);
+    decrement::<'_>(&mut y);
+
+    update::<'_>(true, &mut x, &mut y);
+
+    let v1: i32 = accumulate(8);
+    let v2: i32 = compute(false, 10);
+
+    countdown::<'_>(&mut y);
+
+    //if *m > v1 {
+    //    *m + v2 + x + y
+    //} else {
+    //    v1 + v2 + x + y
+    //}
+    x
+}

@@ -1,0 +1,37 @@
+fn f<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
+    if true {
+        x
+    } else {
+        y
+    }
+}
+
+fn g<'a>(x: &'a i32, y: &'a i32, t: &'a i32, u: &'a i32) -> &'a i32 {
+    let mut result: &'a i32;
+    if !true {
+        result = f::<'a>(x, y);
+    } else {
+        result = f::<'a>(t, u);
+    };
+    result
+}
+
+fn main() {
+    let x = 1;
+    let y = 42;
+    let t = 1337;
+    let u = 7;
+    let v = 33;
+    let w = 10000;
+
+    let r0 = f::<'_>(&x, &y);
+    let r1 = f::<'_>(&t, &u);
+    let r2 = f::<'_>(&v, &w);
+    let r3 = f::<'_>(r0, r1);
+    let r4 = f::<'_>(r1, r2);
+    let r5 = g::<'_>(f::<'_>(r0, r1), r2, r3, r4);
+    let r6 = g::<'_>(f::<'_>(r0, r1), f::<'_>(r2, r3), f::<'_>(r4, r5), f::<'_>(&t, &w));
+    let r7 = g::<'_>(g::<'_>(r0, r1, r2, r3), f::<'_>(r4, r5), r6, &y);
+    let r8 = g::<'_>(g::<'_>(r0, r1, r2, r3), f::<'_>(r4, r5), &x, &u);
+    let r9 = g::<'_>(f::<'_>(r5, r6), r7, r8, &t);
+}
